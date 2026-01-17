@@ -1,0 +1,162 @@
+# 📊 KẾT QUẢ TRAINING MÔ HÌNH BiLSTM + FUZZY LOGIC
+
+**Ngày thực hiện**: 17/01/2026  
+**Máy**: Mac M2 Pro, GPU Metal  
+**Framework**: TensorFlow 2.16.2 + tensorflow-metal
+
+---
+
+## 🎯 Tóm tắt mô hình
+
+- **Kiến trúc**: Bidirectional LSTM (BiLSTM) 3 layers
+  - Layer 1: BiLSTM(128 units) + Dropout(0.2)
+  - Layer 2: BiLSTM(64 units) + Dropout(0.2)
+  - Layer 3: BiLSTM(32 units) + Dropout(0.2)
+  - Output: Dense(4) - dự đoán Close, Open, High, Low
+
+- **Đặc trưng đầu vào**: 
+  - Cửa sổ 60 ngày dữ liệu quá khứ
+  - 5 features: Close, Open, High, Low, y_outputfuzzy
+  - Fuzzy Logic: Sugeno bậc nhất với GMM (5 membership functions)
+
+- **Tham số training**:
+  - Epochs: max 100 (có EarlyStopping patience=10)
+  - Batch size: 32
+  - Train/Test split: 80/20
+  - Optimizer: Adam (lr=0.001)
+  - Loss: MSE
+
+---
+
+## 📈 KẾT QUẢ TỔNG HỢP
+
+| Stock | RMSE    | MAE     | MAPE (%) | R²      | Epochs | Data Size |
+|-------|---------|---------|----------|---------|--------|-----------|
+| AMZN  | 5.672   | 4.231   | 2.91     | **0.9757** | 60     | 5033      |
+| JPM   | 14.412  | 11.652  | 4.93     | 0.6521  | 44     | 1256      |
+| TSLA  | 13.698  | 10.143  | 4.30     | **0.9543** | 68     | 3719      |
+
+### 🏆 Đánh giá
+
+#### **AMZN (Amazon)** - ⭐⭐⭐⭐⭐
+- **R² = 0.9757** (Xuất sắc!)
+- MAPE chỉ 2.91% - sai số rất thấp
+- Model giải thích được 97.57% variance trong dữ liệu
+- **Kết luận**: Model dự đoán cực kỳ chính xác cho AMZN
+
+#### **TSLA (Tesla)** - ⭐⭐⭐⭐
+- **R² = 0.9543** (Rất tốt!)
+- MAPE 4.30% - vẫn ở mức chấp nhận được
+- Dù giá TSLA biến động mạnh, model vẫn đạt độ chính xác cao
+- **Kết luận**: Model hoạt động rất tốt với TSLA
+
+#### **JPM (JP Morgan)** - ⭐⭐⭐
+- **R² = 0.6521** (Khá)
+- MAPE 4.93% - cao nhất trong 3 stocks
+- Dữ liệu ít hơn (1256 records) có thể ảnh hưởng đến hiệu suất
+- **Kết luận**: Model đạt mức trung bình, cần cải thiện
+
+---
+
+## 📊 CHI TIẾT TỪNG STOCK
+
+### 1. AMZN (Amazon)
+
+| Metric | Close  | Open   | High   | Low    |
+|--------|--------|--------|--------|--------|
+| RMSE   | 5.6720 | 5.2015 | 5.1520 | 5.7581 |
+| MAE    | 4.2311 | 3.7819 | 3.8859 | 4.2505 |
+| MAPE   | 2.91%  | 2.58%  | 2.60%  | 2.93%  |
+| R²     | 0.9757 | 0.9796 | 0.9801 | 0.9747 |
+
+**Nhận xét**: High price được dự đoán tốt nhất (R² = 0.9801)
+
+---
+
+### 2. JPM (JP Morgan)
+
+| Metric | Close   | Open   | High    | Low     |
+|--------|---------|--------|---------|---------|
+| RMSE   | 14.4117 | 9.3264 | 14.5835 | 11.7185 |
+| MAE    | 11.6517 | 6.7470 | 11.4713 | 9.2575  |
+| MAPE   | 4.93%   | 2.81%  | 4.76%   | 3.94%   |
+| R²     | 0.6521  | 0.8556 | 0.6528  | 0.7648  |
+
+**Nhận xét**: Open price được dự đoán tốt nhất (R² = 0.8556), Close và High kém hơn
+
+---
+
+### 3. TSLA (Tesla)
+
+| Metric | Close   | Open    | High    | Low     |
+|--------|---------|---------|---------|---------|
+| RMSE   | 13.6983 | 11.5244 | 13.1295 | 14.7897 |
+| MAE    | 10.1430 | 8.5164  | 9.3816  | 11.8386 |
+| MAPE   | 4.30%   | 3.62%   | 3.80%   | 5.42%   |
+| R²     | 0.9543  | 0.9679  | 0.9601  | 0.9439  |
+
+**Nhận xét**: Open price được dự đoán tốt nhất (R² = 0.9679)
+
+---
+
+## 📁 CẤU TRÚC THỨ MỤC KẾT QUẢ
+
+```
+/Users/bao/Documents/tsa_paper_1/
+├── AMZN.csv                          # Dữ liệu gốc
+├── JPM.csv
+├── TSLA.csv
+├── run_all_stocks_bilstm.py          # Script training
+├── all_stocks_summary.csv            # Tổng hợp metrics
+├── KETQUA_TRAINING.md               # Báo cáo này
+│
+├── results_AMZN/
+│   ├── AMZN_bilstm_model.h5         # Model đã train
+│   ├── AMZN_metrics.csv              # Chi tiết metrics
+│   ├── AMZN_training_history.png     # Biểu đồ loss
+│   └── AMZN_predictions.png          # Biểu đồ dự đoán vs thực tế
+│
+├── results_JPM/
+│   ├── JPM_bilstm_model.h5
+│   ├── JPM_metrics.csv
+│   ├── JPM_training_history.png
+│   └── JPM_predictions.png
+│
+└── results_TSLA/
+    ├── TSLA_bilstm_model.h5
+    ├── TSLA_metrics.csv
+    ├── TSLA_training_history.png
+    └── TSLA_predictions.png
+```
+
+---
+
+## 💡 KHUYẾN NGHỊ
+
+### Để cải thiện JPM:
+1. **Thu thập thêm dữ liệu**: JPM chỉ có 1256 records, ít nhất so với AMZN (5033) và TSLA (3719)
+2. **Thử hyperparameter tuning**: Điều chỉnh số units, dropout rate, learning rate
+3. **Feature engineering**: Thêm các technical indicators khác (RSI, MACD, Bollinger Bands)
+4. **Ensemble models**: Kết hợp nhiều models để tăng độ chính xác
+
+### Cho tất cả models:
+1. **Dự đoán nhiều bước**: Hiện tại chỉ dự đoán 1 ngày tiếp theo, có thể mở rộng ra 5-10 ngày
+2. **Attention mechanism**: Thêm attention layer để model tập trung vào các time steps quan trọng
+3. **Transformer architecture**: Thử các kiến trúc hiện đại hơn (Temporal Fusion Transformer)
+
+---
+
+## ✅ KẾT LUẬN
+
+✨ **Mô hình BiLSTM kết hợp Fuzzy Logic đã chạy thành công trên Mac M2 Pro!**
+
+- **AMZN**: Kết quả xuất sắc (R² = 0.9757)
+- **TSLA**: Kết quả rất tốt (R² = 0.9543) 
+- **JPM**: Kết quả khá (R² = 0.6521), cần cải thiện
+
+Tổng thời gian training cả 3 stocks: ~15-20 phút
+
+---
+
+**Generated by**: run_all_stocks_bilstm.py  
+**Date**: 2026-01-17
