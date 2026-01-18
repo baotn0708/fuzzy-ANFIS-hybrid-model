@@ -130,35 +130,21 @@ class ANFISLayer(layers.Layer):
         return config
 
 
-def create_bilstm_anfis_model(look_back, n_features, lstm_units=128, n_rules=5, dropout=0.2, lr=0.001):
+def create_bilstm_anfis_model(look_back, n_features, lstm_units=64, n_rules=3, dropout=0.2, lr=0.001):
     """
-    AGGRESSIVE BiLSTM-ANFIS Hybrid Model
+    BiLSTM-ANFIS Hybrid Model
     
-    Architecture upgrades for R² >= 0.98:
-    1. Deeper BiLSTM: 128 → 64 → 32 units
-    2. Multi-Head Attention layer 
-    3. More ANFIS rules (5 instead of 3)
+    Architecture (based on paper):
+    1. BiLSTM extracts temporal features
+    2. ANFIS layer provides interpretable fuzzy rules for prediction
     """
     inputs = layers.Input(shape=(look_back, n_features))
     
-    # === DEEP BiLSTM Stack ===
+    # BiLSTM for temporal feature extraction
     x = layers.Bidirectional(layers.LSTM(lstm_units, return_sequences=True))(inputs)
     x = layers.Dropout(dropout)(x)
-    x = layers.Bidirectional(layers.LSTM(lstm_units // 2, return_sequences=True))(x)
+    x = layers.Bidirectional(layers.LSTM(lstm_units // 2))(x)
     x = layers.Dropout(dropout)(x)
-    
-    # === Multi-Head Attention ===
-    # Focus on most important time steps
-    attn = layers.MultiHeadAttention(num_heads=4, key_dim=32)(x, x)
-    x = layers.Add()([x, attn])  # Residual connection
-    x = layers.LayerNormalization()(x)
-    
-    # Final LSTM to compress
-    x = layers.Bidirectional(layers.LSTM(lstm_units // 4))(x)
-    x = layers.Dropout(dropout)(x)
-    
-    # Dense layer before ANFIS
-    x = layers.Dense(64, activation='relu')(x)
     
     # ANFIS layer for fuzzy inference
     outputs = ANFISLayer(n_rules=n_rules, output_dim=4, name='anfis')(x)
@@ -170,62 +156,25 @@ def create_bilstm_anfis_model(look_back, n_features, lstm_units=128, n_rules=5, 
 
 
 def prepare_data(data, look_back=60, train_split=0.8):
-    """
-    Returns-Based Data Preparation for Meaningful ANFIS.
-    
-    Why Returns?
-    - ANFIS fuzzy rules can classify meaningful patterns:
-      "Large Positive Return" (-5% to +5% range with fuzzy membership)
-      "Small Negative", "Neutral", etc.
-    - Raw prices normalized to [0,1] lose this semantic meaning.
-    
-    Features:
-    - OHLC Returns (% change)
-    - RSI (already [0,100], rescaled to [0,1])
-    - MACD (normalized)
-    - BB%B (already ~[0,1])
-    - range_pct, gap
-    """
+    """Prepare returns-based data"""
     df = data.copy()
     
-    # === OHLC Returns (Core for ANFIS) ===
+    # Calculate returns
     for col in ['Close', 'Open', 'High', 'Low']:
         df[f'{col}_ret'] = df[col].pct_change()
     
-    # === Technical Indicators ===
-    # RSI (14-period) - scale to [0,1]
-    delta = df['Close'].diff()
-    gain = delta.where(delta > 0, 0).rolling(window=14).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-    rs = gain / (loss + 1e-10)
-    df['RSI'] = (100 - (100 / (1 + rs))) / 100  # Scale to [0,1]
-    
-    # MACD - will be normalized per-window
-    ema12 = df['Close'].ewm(span=12, adjust=False).mean()
-    ema26 = df['Close'].ewm(span=26, adjust=False).mean()
-    df['MACD'] = ema12 - ema26
-    
-    # Bollinger Band %B - already ~[0,1]
-    sma20 = df['Close'].rolling(window=20).mean()
-    std20 = df['Close'].rolling(window=20).std()
-    df['BB_pctB'] = (df['Close'] - (sma20 - 2*std20)) / (4*std20 + 1e-10)
-    
-    # Range and Gap (from original successful model)
     df['range_pct'] = (df['High'] - df['Low']) / df['Close']
     df['gap'] = (df['Open'] - df['Close'].shift(1)) / df['Close'].shift(1)
+    df = df.dropna()
     
-    df = df.dropna().reset_index(drop=True)
-    
-    # Features: Returns + Indicators
-    feature_cols = ['Close_ret', 'Open_ret', 'High_ret', 'Low_ret', 
-                    'RSI', 'MACD', 'BB_pctB', 'range_pct', 'gap']
+    feature_cols = ['Close_ret', 'Open_ret', 'High_ret', 'Low_ret', 'range_pct', 'gap']
     target_cols = ['Close_ret', 'Open_ret', 'High_ret', 'Low_ret']
     
     features = df[feature_cols].values
     targets = df[target_cols].values
     prices = df[['Close', 'Open', 'High', 'Low']].values
     
-    # Scale features (StandardScaler for returns works well)
+    # Scale
     feat_scaler = StandardScaler()
     tgt_scaler = StandardScaler()
     
@@ -237,7 +186,7 @@ def prepare_data(data, look_back=60, train_split=0.8):
     for i in range(look_back, len(features)):
         X.append(scaled_feat[i-look_back:i])
         y.append(scaled_tgt[i])
-        base_px.append(prices[i-1])  # Previous day's prices for recovering actual
+        base_px.append(prices[i-1])
     
     X, y, base_px = np.array(X), np.array(y), np.array(base_px)
     
@@ -246,7 +195,7 @@ def prepare_data(data, look_back=60, train_split=0.8):
         'X_train': X[:split], 'X_test': X[split:],
         'y_train': y[:split], 'y_test': y[split:],
         'base_prices': base_px[split:],
-        'actual_prices': prices[look_back:][split:],
+        'actual_prices': prices[split + look_back:],
         'tgt_scaler': tgt_scaler
     }
 
@@ -267,30 +216,7 @@ def calc_metrics(y_true, y_pred, names=['Close', 'Open', 'High', 'Low']):
     return results
 
 
-import yfinance as yf
-
-def get_stock_data(ticker_or_path, start_date='2020-01-01'):
-    """Load data from local CSV or download from yfinance"""
-    if os.path.exists(ticker_or_path):
-        print(f"📂 Loading local file: {ticker_or_path}")
-        df = pd.read_csv(ticker_or_path)
-    else:
-        print(f"📥 Downloading {ticker_or_path} from yfinance...")
-        try:
-            # increasing period to ensure enough data for 60-day lookback + split
-            df = yf.Ticker(ticker_or_path).history(period="10y") 
-            df = df.reset_index()
-            # Ensure timezone-naive datetime for compatibility
-            if 'Date' in df.columns:
-                df['Date'] = pd.to_datetime(df['Date']).dt.tz_localize(None)
-        except Exception as e:
-            print(f"❌ Failed to download {ticker_or_path}: {e}")
-            return None
-            
-    # Standardize column names if needed (yfinance uses Title Case)
-    return df
-
-def train_stock(stock_name, data_source, output_dir, n_rules=3):
+def train_stock(stock_name, data_path, output_dir, n_rules=3):
     """Train BiLSTM-ANFIS model"""
     print(f"\n{'#'*60}")
     print(f"🚀 TRAIN {stock_name} (BiLSTM-ANFIS, {n_rules} rules)")
@@ -298,37 +224,28 @@ def train_stock(stock_name, data_source, output_dir, n_rules=3):
     
     os.makedirs(output_dir, exist_ok=True)
     
-    data = get_stock_data(data_source)
-    if data is None or data.empty:
-        print("❌ No data available")
-        return None
-        
+    data = pd.read_csv(data_path)
     print(f"✅ Loaded {len(data)} rows")
     
-    try:
-        d = prepare_data(data)
-    except Exception as e:
-        print(f"❌ Data preparation failed: {e}")
-        return None
-        
+    d = prepare_data(data)
     print(f"   Train: {d['X_train'].shape}, Test: {d['X_test'].shape}")
     
-    # Create AGGRESSIVE model (Returns-based with meaningful ANFIS)
+    # Create model
     model = create_bilstm_anfis_model(
         look_back=60, n_features=d['X_train'].shape[-1],
-        lstm_units=128, n_rules=5
+        lstm_units=64, n_rules=n_rules
     )
     
     callbacks = [
-        EarlyStopping(monitor='val_loss', patience=25, restore_best_weights=True),
-        ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=10, min_lr=1e-6, verbose=1)
+        EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True),
+        ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=7, min_lr=1e-6, verbose=1)
     ]
     
-    print(f"🎓 Training (Aggressive: 200 epochs)...")
+    print(f"🎓 Training...")
     history = model.fit(
         d['X_train'], d['y_train'],
         validation_data=(d['X_test'], d['y_test']),
-        epochs=200, batch_size=32,
+        epochs=100, batch_size=32,
         callbacks=callbacks, verbose=1
     )
     
@@ -336,14 +253,10 @@ def train_stock(stock_name, data_source, output_dir, n_rules=3):
     
     # Predict
     pred_scaled = model.predict(d['X_test'], verbose=0)
-    
-    # Denormalize: scaled returns → actual returns
     pred_ret = d['tgt_scaler'].inverse_transform(pred_scaled)
+    pred_px = d['base_prices'] * (1 + pred_ret)
     
-    # Convert returns to prices: price = base_price * (1 + return)
-    base_prices = d['base_prices']
-    pred_px = base_prices * (1 + pred_ret)
-    actual_px = d['actual_prices']
+    actual_px = d['actual_prices'][:len(pred_px)]
     
     # Metrics
     metrics = calc_metrics(actual_px, pred_px)
@@ -360,52 +273,39 @@ def train_stock(stock_name, data_source, output_dir, n_rules=3):
     print(f"\n{'✅' if cm['R2'] >= 0.9 else '⚠️'} R² = {cm['R2']:.4f} (target: 0.9)")
     print(f"{'✅' if cm['MAPE'] <= 3 else '⚠️'} MAPE = {cm['MAPE']:.2f}% (target: 3%)")
     
-    # Save model
-    model.save(os.path.join(output_dir, f"{stock_name}_anfis.keras"))
-    
     return metrics
 
 
 def main():
     base_dir = '/Users/bao/Documents/tsa_paper_1'
-    output_dir = os.path.join(base_dir, 'outputs_yfinance')
+    output_dir = os.path.join(base_dir, 'outputs_anfis')
     
     stocks = {
-        # Local Datasets
         'AMZN': os.path.join(base_dir, 'AMZN.csv'),
         'JPM': os.path.join(base_dir, 'JPM.csv'),
-        'TSLA': os.path.join(base_dir, 'TSLA.csv'),
-        'FINAL_USO (Gold)': os.path.join(base_dir, 'FINAL_USO.csv'),
-        
-        # YFinance Datasets
-        'GOOGL': 'GOOGL',
-        'MSFT': 'MSFT',
-        'NVDA': 'NVDA',
-        'AAPL': 'AAPL',
-        'Gold (YF)': 'GC=F'
+        'TSLA': os.path.join(base_dir, 'TSLA.csv')
     }
     
     all_metrics = {}
     
-    for name, source in stocks.items():
-        try:
-            m = train_stock(name, source, output_dir, n_rules=3)
-            if m:
-                all_metrics[name] = m
-        except Exception as e:
-            print(f"❌ ERROR {name}: {e}")
-            import traceback
-            traceback.print_exc()
+    for name, path in stocks.items():
+        if os.path.exists(path):
+            try:
+                all_metrics[name] = train_stock(name, path, output_dir, n_rules=3)
+            except Exception as e:
+                print(f"❌ ERROR {name}: {e}")
+                import traceback
+                traceback.print_exc()
     
     # Summary
     print(f"\n{'='*60}")
-    print("📊 MỞ RỘNG KIỂM CHỨNG (YFINANCE)")
+    print("📊 SUMMARY (BiLSTM-ANFIS)")
     print(f"{'='*60}")
     
     for n, m in all_metrics.items():
         cm = m['Close']
-        f = "✅" if cm['R2'] > 0.98 and cm['MAPE'] <= 3 else "⚠️"
-        print(f"{n:6}: R²={cm['R2']:.4f}, MAPE={cm['MAPE']:.2f}% {f}")
+        f = "✅" if cm['R2'] > 0.9 and cm['MAPE'] <= 3 else "⚠️"
+        print(f"{n}: R²={cm['R2']:.4f}, MAPE={cm['MAPE']:.2f}% {f}")
     
     print("\n✨ COMPLETE!")
 
