@@ -1,0 +1,813 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage{fontspec}
+\usepackage{xunicode}
+\usepackage{xltxtra}
+\usepackage{polyglossia}
+\setdefaultlanguage{vietnamese}
+\setotherlanguage{english}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning,fit,calc}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{geometry}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{listings}
+\geometry{margin=2.5cm}
+
+\title{Kiến trúc Feature-Group ANFIS + BiLSTM:\\Các Kỹ thuật Độc đáo và Điểm Khác biệt}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Giới thiệu}
+
+Mô hình Feature-Group ANFIS + BiLSTM kết hợp Adaptive Neuro-Fuzzy Inference System (ANFIS) với Bidirectional LSTM theo cách độc đáo, khác biệt với các mô hình deep learning thông thường. Tài liệu này tập trung vào các kỹ thuật đặc biệt và điểm khác biệt của mô hình.
+
+\section{Điểm Khác biệt Chính: Feature-Group ANFIS Architecture}
+
+\subsection{Vấn đề Rule Explosion trong ANFIS Truyền thống}
+
+Trong ANFIS truyền thống, với $n$ đặc trưng và $M$ hàm thành viên (MFs) mỗi đặc trưng, số lượng luật mờ tăng theo hàm mũ:
+\begin{equation}
+N_{rules} = M^n
+\end{equation}
+
+Với $n=6$ đặc trưng và $M=2$ MFs: $N_{rules} = 2^6 = 64$ luật.
+
+Vấn đề:
+\begin{itemize}
+    \item \textbf{Rule explosion}: Số luật tăng nhanh khi số đặc trưng tăng
+    \item \textbf{Overfitting}: Quá nhiều tham số consequent dẫn đến overfitting
+    \item \textbf{Mất ý nghĩa}: Các luật kết hợp đặc trưng không liên quan, khó giải thích
+    \item \textbf{Tính toán phức tạp}: Chi phí tính toán tăng theo hàm mũ
+\end{itemize}
+
+\subsection{Giải pháp: Feature-Group ANFIS}
+
+Thay vì một ANFIS cho tất cả đặc trưng, chia thành các nhóm ngữ nghĩa:
+
+\begin{align}
+\text{Group 1 (Returns)} &: \{r_{Close}, r_{Open}, r_{High}, r_{Low}\} \quad n_1 = 4 \\
+\text{Group 2 (Indicators)} &: \{range_{pct}, gap\} \quad n_2 = 2
+\end{align}
+
+Mỗi nhóm có ANFIS riêng:
+\begin{align}
+N_{rules\_returns} &= M^{n_1} = 2^4 = 16 \\
+N_{rules\_indic} &= M^{n_2} = 2^2 = 4 \\
+N_{rules\_total} &= 16 + 4 = 20
+\end{align}
+
+So với single ANFIS: Giảm từ 64 xuống 20 luật (68.75\%).
+
+\subsection{Lợi ích của Feature-Group Architecture}
+
+\begin{enumerate}
+    \item \textbf{Giảm số tham số}: 
+    \begin{align}
+    \text{Params}_{single} &= 64 \times (6 \times d_{out} + d_{out}) = 64 \times 7 \times d_{out} \\
+    \text{Params}_{group} &= 16 \times (4 \times 8 + 8) + 4 \times (2 \times 4 + 4) = 640 + 48 = 688
+    \end{align}
+    Với $d_{out}=8$: Giảm từ 3,584 xuống 688 (80.8\%).
+    
+    \item \textbf{Ý nghĩa ngữ nghĩa}: Mỗi ANFIS xử lý một nhóm đặc trưng có ý nghĩa tài chính rõ ràng:
+    \begin{itemize}
+        \item Returns ANFIS: Xử lý biến động giá (returns)
+        \item Indicators ANFIS: Xử lý chỉ báo kỹ thuật (range, gap)
+    \end{itemize}
+    
+    \item \textbf{Interpretability}: Các fuzzy rules có ý nghĩa rõ ràng:
+    \begin{equation}
+    \text{IF } r_{Close} \text{ is LOW AND } r_{Open} \text{ is HIGH AND } r_{High} \text{ is LOW AND } r_{Low} \text{ is HIGH THEN } f_i
+    \end{equation}
+    
+    \item \textbf{Modularity}: Có thể điều chỉnh từng ANFIS độc lập (số MFs, output dimension).
+\end{enumerate}
+
+\section{Khởi tạo Thông minh: K-Means cho Membership Functions}
+
+\subsection{Vấn đề với Random Initialization}
+
+Khởi tạo ngẫu nhiên cho tâm hàm thành viên Gaussian:
+\begin{equation}
+c_{jk} \sim \mathcal{U}(-1, 1)
+\end{equation}
+
+Vấn đề:
+\begin{itemize}
+    \item Tâm có thể không phản ánh phân phối dữ liệu thực tế
+    \item Cần nhiều epochs để hội tụ
+    \item Phụ thuộc vào random seed
+    \item LOW/HIGH không có ý nghĩa thực tế
+\end{itemize}
+
+\subsection{Giải pháp: K-Means Initialization}
+
+\subsubsection{Thuật toán}
+
+Với mỗi đặc trưng $j$ trong nhóm, lấy giá trị từ timestep cuối cùng của tất cả mẫu huấn luyện:
+\begin{equation}
+D_j = \{x_{i,T-1,j} : i = 1, \ldots, N_{train}\}
+\end{equation}
+
+Áp dụng K-Means với $k=M$ clusters:
+\begin{equation}
+\{c_{j,0}, \ldots, c_{j,M-1}\} = \arg\min_{\{c_k\}} \sum_{x \in D_j} \min_{k} \|x - c_k\|^2
+\end{equation}
+
+Sắp xếp và gán:
+\begin{equation}
+c_{j,0} < c_{j,1} < \ldots < c_{j,M-1}
+\end{equation}
+
+\subsubsection{Lý do Kỹ thuật}
+
+\begin{enumerate}
+    \item \textbf{Phản ánh phân phối}: K-Means tìm các cụm tự nhiên trong dữ liệu, đảm bảo hàm thành viên phủ đúng vùng dữ liệu:
+    \begin{equation}
+    \text{Coverage} = \int_{-\infty}^{\infty} \max_k \mu_{jk}(x) p(x) dx
+    \end{equation}
+    với $p(x)$ là phân phối thực tế của đặc trưng $j$.
+    
+    \item \textbf{Hội tụ nhanh}: Khởi tạo gần optimal giảm số epochs từ $\sim 150$ xuống $\sim 80-100$.
+    
+    \item \textbf{Ổn định}: Không phụ thuộc random seed, kết quả reproducible.
+    
+    \item \textbf{Ý nghĩa ngữ nghĩa}: LOW và HIGH được định nghĩa dựa trên phân phối thực tế:
+    \begin{equation}
+    \text{LOW} = \{x : x \leq \text{median}(D_j)\}, \quad \text{HIGH} = \{x : x > \text{median}(D_j)\}
+    \end{equation}
+\end{enumerate}
+
+\subsubsection{Độ rộng Khởi tạo}
+
+Độ rộng được khởi tạo cố định:
+\begin{equation}
+\sigma_{jk} = 0.5 \quad \forall j,k
+\end{equation}
+
+Lý do: Sau StandardScaler (std=1), với $\sigma=0.5$, hàm Gaussian phủ khoảng $[c-3\sigma, c+3\sigma] = [c-1.5, c+1.5]$, đủ để phủ $3\sigma$ của phân phối chuẩn.
+
+Trong code, để đảm bảo $\sigma > 0$:
+\begin{equation}
+\sigma_{jk} = |\sigma_{jk}^{param}| + \epsilon, \quad \epsilon = 0.1
+\end{equation}
+
+\section{Implementation Chi tiết: ANFIS 5-Layer Architecture}
+
+\subsection{Layer 1: Fuzzification với Gaussian MFs}
+
+Với input $x_j$ (đặc trưng $j$ đã chuẩn hóa), độ thuộc:
+\begin{equation}
+\mu_{jk}(x_j) = \exp\left(-\frac{(x_j - c_{jk})^2}{2\sigma_{jk}^2}\right)
+\end{equation}
+
+Vectorized computation với batch size $B$:
+\begin{align}
+X &\in \mathbb{R}^{B \times n} \\
+C &\in \mathbb{R}^{n \times M} \\
+\Sigma &\in \mathbb{R}^{n \times M} \\
+\mu &\in \mathbb{R}^{B \times n \times M}
+\end{align}
+
+Tính toán:
+\begin{align}
+X_{exp} &= \text{expand\_dims}(X, 2) \in \mathbb{R}^{B \times n \times 1} \\
+C_{exp} &= \text{expand\_dims}(C, 0) \in \mathbb{R}^{1 \times n \times M} \\
+\Sigma_{exp} &= \text{expand\_dims}(\Sigma, 0) \in \mathbb{R}^{1 \times n \times M} \\
+\mu &= \exp\left(-\frac{(X_{exp} - C_{exp})^2}{2\Sigma_{exp}^2}\right)
+\end{align}
+
+\subsection{Layer 2: Rule Activation với T-norm Product}
+
+\subsubsection{Thuật toán Tính Rule Indices}
+
+Mỗi luật $i$ được xác định bởi bộ chỉ số $(k_{i0}, k_{i1}, \ldots, k_{i(n-1)})$ với:
+\begin{equation}
+i = \sum_{j=0}^{n-1} k_{ij} \times M^j
+\end{equation}
+
+Thuật toán decode (base-$M$ conversion):
+\begin{algorithmic}
+\Function{ComputeRuleIndices}{$n\_features$, $n\_mfs$}
+    \State $indices \gets []$
+    \For{$rule\_idx = 0$ to $n\_mfs^{n\_features} - 1$}
+        \State $rule\_mfs \gets []$
+        \State $temp \gets rule\_idx$
+        \For{$j = 0$ to $n\_features - 1$}
+            \State $mf\_idx \gets temp \bmod n\_mfs$
+            \State $rule\_mfs.\text{append}(mf\_idx)$
+            \State $temp \gets \lfloor temp / n\_mfs \rfloor$
+        \EndFor
+        \State $indices.\text{append}(rule\_mfs)$
+    \EndFor
+    \State \Return $indices$
+\EndFunction
+\end{algorithmic}
+
+Ví dụ với $n=4, M=2$ (Returns ANFIS):
+\begin{itemize}
+    \item Luật 0: $0 = 0 \times 2^0 + 0 \times 2^1 + 0 \times 2^2 + 0 \times 2^3$ → $(0,0,0,0)$
+    \item Luật 5: $5 = 1 \times 2^0 + 0 \times 2^1 + 1 \times 2^2 + 0 \times 2^3$ → $(1,0,1,0)$
+    \item Luật 15: $15 = 1 \times 2^0 + 1 \times 2^1 + 1 \times 2^2 + 1 \times 2^3$ → $(1,1,1,1)$
+\end{itemize}
+
+\subsubsection{Tính Độ kích hoạt}
+
+Độ kích hoạt của luật $i$ sử dụng T-norm product (fuzzy AND):
+\begin{equation}
+w_i = \prod_{j=0}^{n-1} \mu_{j,k_{ij}}(x_j) = \prod_{j=0}^{n-1} \exp\left(-\frac{(x_j - c_{j,k_{ij}})^2}{2\sigma_{j,k_{ij}}^2}\right)
+\end{equation}
+
+Tính toán vectorized:
+\begin{algorithmic}
+\State $w \gets \mathbf{1}_{B \times N_{rules}}$ \Comment{Khởi tạo với 1}
+\For{$j = 0$ to $n-1$}
+    \State $mf\_indices \gets \text{rule\_mf\_indices}[:, j]$ \Comment{$(N_{rules},)$}
+    \State $feat\_memberships \gets \mu[:, j, :]$ \Comment{$(B, M)$}
+    \State $rule\_memberships \gets \text{gather}(feat\_memberships, mf\_indices, axis=1)$ \Comment{$(B, N_{rules})$}
+    \State $w \gets w \odot rule\_memberships$ \Comment{Element-wise product}
+\EndFor
+\end{algorithmic}
+
+\subsection{Layer 3: Normalization (Fuzzy Partition)}
+
+Chuẩn hóa để tạo fuzzy partition:
+\begin{equation}
+\bar{w}_i = \frac{w_i}{\sum_{k=0}^{N_{rules}-1} w_k + \epsilon}, \quad \epsilon = 10^{-8}
+\end{equation}
+
+Đảm bảo:
+\begin{equation}
+\sum_{i=0}^{N_{rules}-1} \bar{w}_i = 1
+\end{equation}
+
+\subsection{Layer 4: TSK First-Order Consequents}
+
+Mỗi luật có hàm tuyến tính (first-order Sugeno):
+\begin{equation}
+f_i(\mathbf{x}) = \sum_{j=0}^{n-1} p_{ij} x_j + r_i
+\end{equation}
+
+với:
+\begin{itemize}
+    \item $p_{ij} \in \mathbb{R}^{d_{out}}$: hệ số tuyến tính
+    \item $r_i \in \mathbb{R}^{d_{out}}$: bias
+    \item $d_{out}$: output dimension (8 cho Returns, 4 cho Indicators)
+\end{itemize}
+
+Vectorized computation:
+\begin{align}
+X &\in \mathbb{R}^{B \times n} \\
+P &\in \mathbb{R}^{N_{rules} \times n \times d_{out}} \\
+R &\in \mathbb{R}^{N_{rules} \times d_{out}} \\
+f &\in \mathbb{R}^{B \times N_{rules} \times d_{out}}
+\end{align}
+
+\begin{align}
+X_{exp} &= \text{expand\_dims}(X, [1, 3]) \in \mathbb{R}^{B \times 1 \times n \times 1} \\
+P_{exp} &= \text{expand\_dims}(P, 0) \in \mathbb{R}^{1 \times N_{rules} \times n \times d_{out}} \\
+\text{linear} &= \sum_{j=0}^{n-1} (X_{exp} \odot P_{exp}) \in \mathbb{R}^{B \times N_{rules} \times d_{out}} \\
+f &= \text{linear} + R
+\end{align}
+
+Khởi tạo:
+\begin{itemize}
+    \item $p_{ij}$: Glorot uniform (Xavier): $\mathcal{U}(-\sqrt{6/(n+d_{out})}, \sqrt{6/(n+d_{out})})$
+    \item $r_i$: Zeros
+\end{itemize}
+
+\subsection{Layer 5: Defuzzification (Weighted Sum)}
+
+Đầu ra cuối cùng:
+\begin{equation}
+y_{ANFIS} = \sum_{i=0}^{N_{rules}-1} \bar{w}_i f_i(\mathbf{x})
+\end{equation}
+
+Vectorized:
+\begin{align}
+\bar{W}_{exp} &= \text{expand\_dims}(\bar{W}, 2) \in \mathbb{R}^{B \times N_{rules} \times 1} \\
+f_{exp} &= f \in \mathbb{R}^{B \times N_{rules} \times d_{out}} \\
+y_{ANFIS} &= \sum_{i=0}^{N_{rules}-1} (\bar{W}_{exp} \odot f_{exp}) \in \mathbb{R}^{B \times d_{out}}
+\end{align}
+
+\section{Backpropagation qua Fuzzy Layers: Gradient Computation}
+
+\subsection{Gradient Flow trong ANFIS}
+
+ANFIS là differentiable end-to-end, cho phép backpropagation. Gradient được tính ngược từ output về input qua 5 layers.
+
+\subsection{Layer 5: Defuzzification Gradient}
+
+Với loss $\mathcal{L}$ và output $y_{ANFIS} \in \mathbb{R}^{B \times d_{out}}$:
+
+\begin{align}
+\frac{\partial \mathcal{L}}{\partial \bar{w}_i} &= \sum_{d=0}^{d_{out}-1} \frac{\partial \mathcal{L}}{\partial y_{ANFIS,d}} \cdot f_{i,d} \\
+\frac{\partial \mathcal{L}}{\partial f_i} &= \frac{\partial \mathcal{L}}{\partial y_{ANFIS}} \odot \bar{w}_i
+\end{align}
+
+\subsection{Layer 4: TSK Consequents Gradient}
+
+\begin{align}
+\frac{\partial \mathcal{L}}{\partial p_{ij}} &= \sum_{b=0}^{B-1} \frac{\partial \mathcal{L}}{\partial f_{i,d}} \cdot x_{b,j} \\
+\frac{\partial \mathcal{L}}{\partial r_i} &= \sum_{b=0}^{B-1} \frac{\partial \mathcal{L}}{\partial f_i} \\
+\frac{\partial \mathcal{L}}{\partial x_j} &= \sum_{i=0}^{N_{rules}-1} \frac{\partial \mathcal{L}}{\partial f_i} \cdot p_{ij}
+\end{align}
+
+\subsection{Layer 3: Normalization Gradient}
+
+Với normalization: $\bar{w}_i = w_i / (\sum_k w_k + \epsilon)$
+
+\begin{align}
+\frac{\partial \mathcal{L}}{\partial w_i} &= \frac{1}{W_{sum}} \left( \frac{\partial \mathcal{L}}{\partial \bar{w}_i} - \sum_{k=0}^{N_{rules}-1} \frac{\partial \mathcal{L}}{\partial \bar{w}_k} \cdot \bar{w}_k \right)
+\end{align}
+
+với $W_{sum} = \sum_k w_k + \epsilon$.
+
+\subsection{Layer 2: Rule Activation Gradient}
+
+Với $w_i = \prod_{j=0}^{n-1} \mu_{j,k_{ij}}(x_j)$:
+
+\begin{equation}
+\frac{\partial w_i}{\partial \mu_{j,k_{ij}}} = \prod_{k \neq j} \mu_{k,k_{ik}}(x_k) = \frac{w_i}{\mu_{j,k_{ij}}(x_j)}
+\end{equation}
+
+\subsection{Layer 1: Fuzzification Gradient}
+
+Với $\mu_{jk}(x_j) = \exp(-(x_j - c_{jk})^2 / (2\sigma_{jk}^2))$:
+
+\begin{align}
+\frac{\partial \mu_{jk}}{\partial c_{jk}} &= \mu_{jk} \cdot \frac{x_j - c_{jk}}{\sigma_{jk}^2} \\
+\frac{\partial \mu_{jk}}{\partial \sigma_{jk}} &= \mu_{jk} \cdot \frac{(x_j - c_{jk})^2}{\sigma_{jk}^3} \\
+\frac{\partial \mu_{jk}}{\partial x_j} &= -\mu_{jk} \cdot \frac{x_j - c_{jk}}{\sigma_{jk}^2}
+\end{align}
+
+\subsection{Đặc điểm Gradient trong ANFIS}
+
+\begin{enumerate}
+    \item \textbf{Product rule}: Gradient qua product T-norm có thể nhỏ nếu một thành phần nhỏ (vanishing gradient problem).
+    \item \textbf{Gaussian MFs}: Gradient của Gaussian có thể rất nhỏ khi $|x_j - c_{jk}|$ lớn, do $\exp(-z^2)$ giảm nhanh.
+    \item \textbf{Normalization}: Gradient qua normalization layer có thể lan truyền đến tất cả rules, không chỉ rule active.
+    \item \textbf{Stability}: Với K-Means initialization, $c_{jk}$ gần dữ liệu, gradient ổn định hơn random initialization.
+\end{enumerate}
+
+\section{Hybrid Architecture: ANFIS + BiLSTM}
+
+\subsection{Phân công Nhiệm vụ}
+
+\begin{itemize}
+    \item \textbf{ANFIS}: Xử lý thông tin tại timestep cuối cùng (current state)
+    \begin{equation}
+    x_{ANFIS} = X[:, -1, :] \in \mathbb{R}^{B \times 6}
+    \end{equation}
+    
+    \item \textbf{BiLSTM}: Xử lý toàn bộ chuỗi thời gian (temporal dependencies)
+    \begin{equation}
+    h_{BiLSTM} = \text{BiLSTM}(X) \in \mathbb{R}^{B \times 64}
+    \end{equation}
+\end{itemize}
+
+Lý do thiết kế:
+\begin{enumerate}
+    \item \textbf{ANFIS không xử lý chuỗi}: ANFIS được thiết kế cho vector đặc trưng, không có memory mechanism.
+    \item \textbf{Timestep cuối quan trọng nhất}: Trong dự đoán giá, thông tin gần đây nhất thường quan trọng nhất.
+    \item \textbf{Bổ sung nhau}: ANFIS nắm bắt patterns tại thời điểm hiện tại, BiLSTM nắm bắt patterns trong chuỗi.
+\end{enumerate}
+
+\subsection{Kết hợp Outputs}
+
+\subsubsection{Kết hợp ANFIS Outputs}
+
+Hai ANFIS outputs được concatenate:
+\begin{equation}
+h_{ANFIS\_concat} = [y_{ANFIS\_returns}; y_{ANFIS\_indic}] \in \mathbb{R}^{B \times 12}
+\end{equation}
+
+Đi qua Dense layer:
+\begin{equation}
+h_{ANFIS} = \text{ReLU}(W_{ANFIS} h_{ANFIS\_concat} + b_{ANFIS}) \in \mathbb{R}^{B \times 16}
+\end{equation}
+
+với $W_{ANFIS} \in \mathbb{R}^{16 \times 12}$, $b_{ANFIS} \in \mathbb{R}^{16}$.
+
+\subsubsection{Kết hợp Hybrid}
+
+\begin{equation}
+h_{combined} = [h_{ANFIS}; h_{BiLSTM}] \in \mathbb{R}^{B \times 80}
+\end{equation}
+
+Final layers:
+\begin{align}
+h_1 &= \text{ReLU}(W_1 h_{combined} + b_1) \in \mathbb{R}^{B \times 32} \\
+h_2 &= \text{Dropout}_{0.1}(h_1) \\
+y_{pred} &= W_2 h_2 + b_2 \in \mathbb{R}^{B \times 4}
+\end{align}
+
+\section{Rule Extraction và Visualization Chi tiết}
+
+\subsection{Extract Fuzzy Rules - Implementation}
+
+Mỗi luật được mã hóa dưới dạng:
+\begin{equation}
+\text{Rule } i: \text{ IF } x_0 \text{ is } A_{0,k_{i0}} \text{ AND } \ldots \text{ AND } x_{n-1} \text{ is } A_{n-1,k_{i(n-1)}} \text{ THEN } f_i(\mathbf{x})
+\end{equation}
+
+Với $A_{j,k}$ là hàm thành viên thứ $k$ của đặc trưng $j$ (LOW hoặc HIGH).
+
+\subsubsection{Thuật toán Extract Rules}
+
+\begin{algorithmic}
+\Function{ExtractRules}{$model$, $feature\_names$}
+    \State $rules \gets []$
+    \For{$layer$ in $model.layers$}
+        \If{$layer$ is ANFIS}
+            \State $n\_features \gets layer.n\_features$
+            \State $n\_rules \gets layer.n\_rules$
+            \State $rule\_indices \gets layer.rule\_mf\_indices$
+            \For{$i = 0$ to $n\_rules - 1$}
+                \State $conditions \gets []$
+                \For{$j = 0$ to $n\_features - 1$}
+                    \State $mf\_idx \gets rule\_indices[i, j]$
+                    \State $mf\_label \gets$ "LOW" if $mf\_idx = 0$ else "HIGH"
+                    \State $conditions.\text{append}(feature\_names[j] + " is " + mf\_label)$
+                \EndFor
+                \State $rule\_str \gets$ "IF " + " AND ".join($conditions$)
+                \State $rules.\text{append}(rule\_str)$
+            \EndFor
+        \EndIf
+    \EndFor
+    \State \Return $rules$
+\EndFunction
+\end{algorithmic}
+
+\subsection{Firing Strength Analysis Chi tiết}
+
+\subsubsection{Top-K Active Rules}
+
+Với mỗi prediction, trích xuất top-$k$ rules có firing strength cao nhất:
+\begin{equation}
+\text{TopK} = \arg\max_{i \in \{0, \ldots, N_{rules}-1\}}^k \bar{w}_i
+\end{equation}
+
+Mỗi rule trong TopK có:
+\begin{itemize}
+    \item Firing strength: $\bar{w}_i$
+    \item Rule output: $f_i(\mathbf{x})$
+    \item Contribution: $\bar{w}_i \times f_i(\mathbf{x})$
+    \item Percentage contribution: $(\bar{w}_i \times f_i(\mathbf{x})) / y_{ANFIS} \times 100\%$
+\end{itemize}
+
+\subsubsection{Firing Strength Distribution}
+
+Phân phối firing strength cho thấy:
+\begin{itemize}
+    \item \textbf{Sparse activation}: Nếu chỉ vài rules active ($\bar{w}_i > 0.1$), mô hình quyết định rõ ràng.
+    \item \textbf{Diffuse activation}: Nếu nhiều rules active, mô hình không chắc chắn.
+    \item \textbf{Entropy}: $H = -\sum_i \bar{w}_i \log(\bar{w}_i + \epsilon)$ đo độ không chắc chắn.
+\end{itemize}
+
+\subsubsection{Rule Contribution Matrix}
+
+Với $B$ samples, tạo matrix:
+\begin{equation}
+C \in \mathbb{R}^{B \times N_{rules} \times d_{out}}, \quad C_{b,i,d} = \bar{w}_{b,i} \times f_{i,d}(\mathbf{x}_b)
+\end{equation}
+
+Matrix này cho thấy:
+\begin{itemize}
+    \item Rules nào đóng góp nhiều nhất cho mỗi prediction
+    \item Patterns trong rule activation across samples
+    \item Correlation giữa rules
+\end{itemize}
+
+\subsection{Visualization Techniques}
+
+\subsubsection{Membership Function Visualization}
+
+Vẽ các hàm thành viên Gaussian:
+\begin{equation}
+\mu_{jk}(x) = \exp\left(-\frac{(x - c_{jk})^2}{2\sigma_{jk}^2}\right)
+\end{equation}
+
+Cho mỗi đặc trưng $j$, vẽ $M$ curves trên cùng một plot, cho thấy:
+\begin{itemize}
+    \item Vị trí centers $c_{jk}$ (sau K-Means initialization và training)
+    \item Độ rộng $\sigma_{jk}$ (có thể thay đổi sau training)
+    \item Overlap giữa các MFs
+\end{itemize}
+
+\subsubsection{Rule Activation Heatmap}
+
+Tạo heatmap $H \in \mathbb{R}^{N_{rules} \times B}$ với $H_{i,b} = \bar{w}_{b,i}$:
+\begin{itemize}
+    \item Rows: Rules (16 cho Returns, 4 cho Indicators)
+    \item Columns: Samples
+    \item Color intensity: Firing strength
+\end{itemize}
+
+Heatmap cho thấy:
+\begin{itemize}
+    \item Rules nào active thường xuyên
+    \item Clustering của samples theo rule activation
+    \item Patterns trong rule usage
+\end{itemize}
+
+\subsubsection{Feature-Rule Interaction Matrix}
+
+Với Returns ANFIS ($n=4, M=2, N_{rules}=16$), tạo matrix:
+\begin{equation}
+I \in \mathbb{R}^{n \times N_{rules}}, \quad I_{j,i} = \begin{cases}
+1 & \text{nếu rule } i \text{ dùng MF HIGH cho feature } j \\
+0 & \text{nếu rule } i \text{ dùng MF LOW cho feature } j
+\end{cases}
+\end{equation}
+
+Matrix này cho thấy:
+\begin{itemize}
+    \item Patterns trong rule combinations
+    \item Features nào quan trọng (xuất hiện trong nhiều rules)
+    \item Correlation giữa features trong rules
+\end{itemize}
+
+\subsubsection{Prediction Explanation}
+
+Với một prediction cụ thể:
+\begin{enumerate}
+    \item Trích xuất top-3 active rules với firing strengths
+    \item Hiển thị rule descriptions (IF-THEN format)
+    \item Tính contribution của mỗi rule: $\bar{w}_i \times f_i(\mathbf{x})$
+    \item Hiển thị membership values cho input features: $\mu_{jk}(x_j)$
+    \item Tạo explanation text: "Prediction is based on Rule X (strength: Y\%), Rule Z (strength: W\%), ..."
+\end{enumerate}
+
+\subsection{Implementation Code Structure}
+
+\begin{lstlisting}[language=Python, basicstyle=\small]
+def analyze_prediction(model, X_sample, feature_names):
+    # Get last timestep
+    last_step = X_sample[:, -1, :]
+    returns_features = last_step[:, :4]
+    indic_features = last_step[:, 4:]
+    
+    analysis = {}
+    for layer in model.layers:
+        if layer.name == 'anfis_returns':
+            output, firing = layer(returns_features, 
+                                  return_firing_strengths=True)
+            firing_np = firing.numpy()[0]
+            rules = layer.get_rule_descriptions(feature_names[:4])
+            
+            # Top 3 active rules
+            top_indices = np.argsort(firing_np)[::-1][:3]
+            analysis['returns'] = {
+                'top_rules': [(rules[i], float(firing_np[i])) 
+                             for i in top_indices],
+                'firing_distribution': firing_np.tolist(),
+                'entropy': -np.sum(firing_np * np.log(firing_np + 1e-8))
+            }
+    return analysis
+\end{lstlisting}
+
+\section{So sánh Chi tiết với Các Phương pháp Khác}
+
+\subsection{vs. Single ANFIS}
+
+\begin{table}[h]
+\centering
+\caption{So sánh Single vs. Feature-Group ANFIS}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Tiêu chí} & \textbf{Single ANFIS} & \textbf{Feature-Group} \\
+\midrule
+Số luật & 64 & 20 (68.75\% giảm) \\
+Tham số consequent & 3,584 & 688 (80.8\% giảm) \\
+Ý nghĩa ngữ nghĩa & Thấp & Cao \\
+Interpretability & Khó & Dễ \\
+Modularity & Không & Có \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Phân tích Chi tiết}
+
+\begin{enumerate}
+    \item \textbf{Rule Explosion}: Single ANFIS với $n=6, M=2$ tạo $2^6=64$ rules. Feature-Group chia thành $2^4+2^2=20$ rules, giảm 68.75\%.
+    
+    \item \textbf{Tham số Consequent}: 
+    \begin{align}
+    \text{Single}: &\quad 64 \times (6 \times 8 + 8) = 3,584 \\
+    \text{Group}: &\quad 16 \times (4 \times 8 + 8) + 4 \times (2 \times 4 + 4) = 688
+    \end{align}
+    Giảm 80.8\% tham số, giảm overfitting.
+    
+    \item \textbf{Rule Meaning}: 
+    \begin{itemize}
+        \item Single: "IF $r_{Close}$ is LOW AND $r_{Open}$ is HIGH AND $r_{High}$ is LOW AND $r_{Low}$ is HIGH AND $range_{pct}$ is LOW AND $gap$ is HIGH THEN ..." - kết hợp đặc trưng không liên quan.
+        \item Group: Returns rules chỉ kết hợp returns, Indicators rules chỉ kết hợp indicators - có ý nghĩa tài chính rõ ràng.
+    \end{itemize}
+    
+    \item \textbf{Training Stability}: Feature-Group có ít tham số hơn, gradient ổn định hơn, hội tụ nhanh hơn.
+\end{enumerate}
+
+\subsection{vs. Pure Deep Learning (LSTM/GRU/Transformer)}
+
+\begin{table}[h]
+\centering
+\caption{So sánh với Pure Deep Learning}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Tiêu chí} & \textbf{Pure DL} & \textbf{ANFIS+BiLSTM} & \textbf{Ưu điểm} \\
+\midrule
+Interpretability & Black box & Fuzzy rules & ANFIS+BiLSTM \\
+Initialization & Random & K-Means & ANFIS+BiLSTM \\
+Feature grouping & Learned & Semantic & ANFIS+BiLSTM \\
+Rule extraction & Không & Có & ANFIS+BiLSTM \\
+Temporal modeling & Tốt & Tốt & Tương đương \\
+Non-linearity & ReLU/Tanh & Gaussian+Linear & Khác nhau \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Phân tích Chi tiết}
+
+\begin{enumerate}
+    \item \textbf{Interpretability}:
+    \begin{itemize}
+        \item Pure DL: Không thể giải thích tại sao đưa ra prediction. Chỉ có thể xem attention weights (nếu có attention).
+        \item ANFIS+BiLSTM: Có thể trích xuất fuzzy rules, xem firing strengths, giải thích contribution của từng rule.
+    \end{itemize}
+    
+    \item \textbf{Initialization}:
+    \begin{itemize}
+        \item Pure DL: Random initialization (Glorot, He, etc.) - không dựa trên dữ liệu.
+        \item ANFIS+BiLSTM: K-Means initialization cho ANFIS MFs dựa trên phân phối dữ liệu thực tế, hội tụ nhanh hơn.
+    \end{itemize}
+    
+    \item \textbf{Feature Grouping}:
+    \begin{itemize}
+        \item Pure DL: Features được học tự động qua hidden layers, không có ý nghĩa rõ ràng.
+        \item ANFIS+BiLSTM: Features được nhóm theo ý nghĩa ngữ nghĩa (Returns vs. Indicators), mỗi nhóm có ANFIS riêng.
+    \end{itemize}
+    
+    \item \textbf{Non-linearity}:
+    \begin{itemize}
+        \item Pure DL: ReLU/Tanh - hard activation, không smooth.
+        \item ANFIS+BiLSTM: Gaussian MFs - smooth, differentiable, có ý nghĩa xác suất (membership degree).
+    \end{itemize}
+    
+    \item \textbf{Hybrid Approach}:
+    \begin{itemize}
+        \item Pure DL: Chỉ connectionist (neural networks).
+        \item ANFIS+BiLSTM: Kết hợp symbolic (ANFIS fuzzy logic) và connectionist (BiLSTM), tận dụng ưu điểm cả hai.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{vs. Attention-based Models (Transformer)}
+
+\begin{table}[h]
+\centering
+\caption{So sánh với Attention-based Models}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Tiêu chí} & \textbf{Transformer} & \textbf{ANFIS+BiLSTM} \\
+\midrule
+Attention mechanism & Self-attention & Fuzzy rules \\
+Interpretability & Attention weights & Rule firing strengths \\
+Complexity & $O(T^2)$ & $O(T \times U^2)$ \\
+Feature interaction & Learned & Semantic grouping \\
+Temporal modeling & Bidirectional & Bidirectional (BiLSTM) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Phân tích}
+
+\begin{enumerate}
+    \item \textbf{Attention vs. Fuzzy Rules}:
+    \begin{itemize}
+        \item Transformer: Attention weights cho thấy timesteps nào quan trọng, nhưng không giải thích "tại sao".
+        \item ANFIS: Fuzzy rules giải thích "IF conditions THEN output", có ý nghĩa logic rõ ràng.
+    \end{itemize}
+    
+    \item \textbf{Complexity}:
+    \begin{itemize}
+        \item Transformer: $O(T^2)$ do self-attention, không scalable với $T$ lớn.
+        \item ANFIS+BiLSTM: $O(T \times U^2)$ với BiLSTM, $O(N_{rules} \times n \times d_{out})$ với ANFIS, tổng hợp scalable hơn.
+    \end{itemize}
+    
+    \item \textbf{Feature Interaction}:
+    \begin{itemize}
+        \item Transformer: Feature interactions được học tự động qua attention, không có cấu trúc.
+        \item ANFIS: Feature interactions được định nghĩa rõ ràng qua fuzzy rules, có cấu trúc ngữ nghĩa.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{vs. Ensemble Methods (Random Forest, XGBoost)}
+
+\begin{table}[h]
+\centering
+\caption{So sánh với Ensemble Methods}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Tiêu chí} & \textbf{Ensemble} & \textbf{ANFIS+BiLSTM} \\
+\midrule
+Temporal modeling & Không & Có (BiLSTM) \\
+Interpretability & Feature importance & Fuzzy rules \\
+Non-linearity & Tree splits & Gaussian MFs \\
+Gradient-based & Không & Có (end-to-end) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Phân tích}
+
+\begin{enumerate}
+    \item \textbf{Temporal Modeling}:
+    \begin{itemize}
+        \item Ensemble: Không có cơ chế xử lý temporal dependencies, cần feature engineering (lags, moving averages).
+        \item ANFIS+BiLSTM: BiLSTM tự động nắm bắt temporal dependencies, không cần feature engineering phức tạp.
+    \end{itemize}
+    
+    \item \textbf{Interpretability}:
+    \begin{itemize}
+        \item Ensemble: Feature importance - chỉ cho biết features nào quan trọng, không giải thích interactions.
+        \item ANFIS+BiLSTM: Fuzzy rules - giải thích cả features và interactions qua IF-THEN rules.
+    \end{itemize}
+    
+    \item \textbf{End-to-end Learning}:
+    \begin{itemize}
+        \item Ensemble: Không differentiable, không thể train end-to-end với neural networks.
+        \item ANFIS+BiLSTM: Differentiable, có thể train end-to-end, gradient flow qua cả ANFIS và BiLSTM.
+    \end{itemize}
+\end{enumerate}
+
+\section{Tham số và Độ phức tạp}
+
+\subsection{Số Tham số}
+
+\begin{table}[h]
+\centering
+\caption{Chi tiết số tham số}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Thành phần} & \textbf{Số tham số} & \textbf{Công thức} \\
+\midrule
+Returns ANFIS & 656 & $8+8+512+128$ \\
+Indicators ANFIS & 56 & $4+4+32+16$ \\
+ANFIS Dense & 208 & $12 \times 16 + 16$ \\
+BiLSTM Layer 1 & 36,352 & $4 \times (6 \times 64 + 64^2 + 64) \times 2$ \\
+BiLSTM Layer 2 & 41,216 & $4 \times (128 \times 32 + 32^2 + 32) \times 2$ \\
+Combined Dense & 2,592 & $80 \times 32 + 32$ \\
+Output Dense & 132 & $32 \times 4 + 4$ \\
+\midrule
+\textbf{Tổng} & \textbf{123,460} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Độ phức tạp Tính toán}
+
+\subsubsection{ANFIS}
+
+Với $B$ batch size, $n$ features, $M$ MFs, $N_{rules}$ rules, $d_{out}$ output:
+
+\begin{align}
+\text{Time} &= O(B \times N_{rules} \times (n + n \times d_{out} + d_{out})) \\
+&= O(B \times N_{rules} \times n \times d_{out})
+\end{align}
+
+Returns ANFIS: $O(512B)$ \\
+Indicators ANFIS: $O(32B)$
+
+\subsubsection{BiLSTM}
+
+Với $T$ sequence length, $U$ hidden units:
+
+\begin{equation}
+\text{Time} = O(B \times T \times (U^2 + d_{in} \times U))
+\end{equation}
+
+\section{Kết luận}
+
+Các điểm khác biệt chính của mô hình:
+
+\begin{enumerate}
+    \item \textbf{Feature-Group ANFIS}: Chia đặc trưng thành nhóm ngữ nghĩa, giảm số luật từ 64 xuống 20, tăng interpretability.
+    \item \textbf{K-Means Initialization}: Khởi tạo membership function centers dựa trên phân phối dữ liệu, không phải random.
+    \item \textbf{Hybrid Architecture}: Kết hợp ANFIS (symbolic, interpretable) với BiLSTM (connectionist, temporal), phân công nhiệm vụ rõ ràng.
+    \item \textbf{ANFIS chỉ dùng timestep cuối}: Tận dụng thông tin hiện tại quan trọng nhất, BiLSTM xử lý temporal dependencies.
+    \item \textbf{Rule Extraction}: Có thể trích xuất và giải thích fuzzy rules, không phải black box như pure deep learning.
+\end{enumerate}
+
+Các kỹ thuật này làm cho mô hình vừa có hiệu suất cao (nhờ BiLSTM) vừa có khả năng giải thích (nhờ ANFIS), phù hợp cho các ứng dụng tài chính yêu cầu cả accuracy và interpretability.
+
+\end{document}
