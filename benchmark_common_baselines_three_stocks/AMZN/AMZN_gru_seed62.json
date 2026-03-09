@@ -1,0 +1,82 @@
+{
+  "model_key": "gru",
+  "model_name": "GRU",
+  "seed": 62,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 5300,
+    "val_sequences": 670,
+    "test_sequences": 670,
+    "train_sample_start": "1997-08-11",
+    "train_sample_end": "2018-08-30",
+    "val_sample_start": "2018-08-31",
+    "val_sample_end": "2021-04-30",
+    "test_sample_start": "2021-05-03",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 45.408121824264526,
+    "epochs_trained": 12,
+    "selected_epoch": 10,
+    "inference_ms_per_sample": 0.1877496880595898
+  },
+  "params": 24420,
+  "metrics": {
+    "Close": {
+      "MSE": 9.908706665039062,
+      "RMSE": 3.147809820341607,
+      "MAE": 2.269533157348633,
+      "MAPE": 1.7518825829029083,
+      "R2": 0.9871309399604797,
+      "DA": 51.34328358208955
+    },
+    "Open": {
+      "MSE": 4.171200752258301,
+      "RMSE": 2.0423517699598914,
+      "MAE": 1.1914852857589722,
+      "MAPE": 0.9304165840148926,
+      "R2": 0.9945969581604004,
+      "DA": 84.77611940298507
+    },
+    "High": {
+      "MSE": 6.261802673339844,
+      "RMSE": 2.5023594212942,
+      "MAE": 1.6889151334762573,
+      "MAPE": 1.2921901419758797,
+      "R2": 0.9918879866600037,
+      "DA": 69.40298507462687
+    },
+    "Low": {
+      "MSE": 6.311015605926514,
+      "RMSE": 2.5121734824503092,
+      "MAE": 1.6769994497299194,
+      "MAPE": 1.315307803452015,
+      "R2": 0.991805911064148,
+      "DA": 72.23880597014926
+    },
+    "Model": {
+      "Avg_R2": 0.9913554489612579,
+      "Avg_DA": 69.44029850746269,
+      "Avg_MAPE": 1.3224492780864239,
+      "Close_DA": 51.34328358208955,
+      "Min_DA": 51.34328358208955
+    }
+  }
+}

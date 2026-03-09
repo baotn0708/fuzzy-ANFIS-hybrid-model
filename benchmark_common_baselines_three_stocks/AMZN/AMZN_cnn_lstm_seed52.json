@@ -1,0 +1,82 @@
+{
+  "model_key": "cnn_lstm",
+  "model_name": "CNN-LSTM",
+  "seed": 52,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 5300,
+    "val_sequences": 670,
+    "test_sequences": 670,
+    "train_sample_start": "1997-08-11",
+    "train_sample_end": "2018-08-30",
+    "val_sample_start": "2018-08-31",
+    "val_sample_end": "2021-04-30",
+    "test_sample_start": "2021-05-03",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 47.718034982681274,
+    "epochs_trained": 12,
+    "selected_epoch": 5,
+    "inference_ms_per_sample": 0.18786616865734468
+  },
+  "params": 47844,
+  "metrics": {
+    "Close": {
+      "MSE": 9.875585556030273,
+      "RMSE": 3.1425444397860587,
+      "MAE": 2.259592294692993,
+      "MAPE": 1.7445066943764687,
+      "R2": 0.9871739745140076,
+      "DA": 50.0
+    },
+    "Open": {
+      "MSE": 4.133000373840332,
+      "RMSE": 2.0329782029919388,
+      "MAE": 1.1835318803787231,
+      "MAPE": 0.9257416240870953,
+      "R2": 0.994646430015564,
+      "DA": 84.02985074626865
+    },
+    "High": {
+      "MSE": 6.1818695068359375,
+      "RMSE": 2.4863365634676127,
+      "MAE": 1.6737698316574097,
+      "MAPE": 1.2819284573197365,
+      "R2": 0.9919915199279785,
+      "DA": 68.2089552238806
+    },
+    "Low": {
+      "MSE": 6.237555503845215,
+      "RMSE": 2.4975098606102066,
+      "MAE": 1.6903247833251953,
+      "MAPE": 1.3238494284451008,
+      "R2": 0.9919012784957886,
+      "DA": 69.85074626865672
+    },
+    "Model": {
+      "Avg_R2": 0.9914283007383347,
+      "Avg_DA": 68.0223880597015,
+      "Avg_MAPE": 1.3190065510571003,
+      "Close_DA": 50.0,
+      "Min_DA": 50.0
+    }
+  }
+}
