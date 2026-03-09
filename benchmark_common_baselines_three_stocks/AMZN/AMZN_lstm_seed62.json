@@ -1,0 +1,82 @@
+{
+  "model_key": "lstm",
+  "model_name": "LSTM",
+  "seed": 62,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 5300,
+    "val_sequences": 670,
+    "test_sequences": 670,
+    "train_sample_start": "1997-08-11",
+    "train_sample_end": "2018-08-30",
+    "val_sample_start": "2018-08-31",
+    "val_sample_end": "2021-04-30",
+    "test_sample_start": "2021-05-03",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 47.670958042144775,
+    "epochs_trained": 12,
+    "selected_epoch": 5,
+    "inference_ms_per_sample": 0.1615709582092134
+  },
+  "params": 31780,
+  "metrics": {
+    "Close": {
+      "MSE": 9.90796947479248,
+      "RMSE": 3.1476927224226445,
+      "MAE": 2.2682676315307617,
+      "MAPE": 1.751856692135334,
+      "R2": 0.9871318936347961,
+      "DA": 50.0
+    },
+    "Open": {
+      "MSE": 4.152209281921387,
+      "RMSE": 2.0376970535193366,
+      "MAE": 1.189908742904663,
+      "MAPE": 0.929673295468092,
+      "R2": 0.9946215152740479,
+      "DA": 84.6268656716418
+    },
+    "High": {
+      "MSE": 6.31268310546875,
+      "RMSE": 2.5125053443662066,
+      "MAE": 1.7186437845230103,
+      "MAPE": 1.3139229267835617,
+      "R2": 0.9918220639228821,
+      "DA": 67.61194029850746
+    },
+    "Low": {
+      "MSE": 6.239861011505127,
+      "RMSE": 2.4979713792405884,
+      "MAE": 1.6981033086776733,
+      "MAPE": 1.3299324549734592,
+      "R2": 0.9918982982635498,
+      "DA": 68.95522388059702
+    },
+    "Model": {
+      "Avg_R2": 0.991368442773819,
+      "Avg_DA": 67.79850746268657,
+      "Avg_MAPE": 1.3313463423401117,
+      "Close_DA": 50.0,
+      "Min_DA": 50.0
+    }
+  }
+}

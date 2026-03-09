@@ -1,0 +1,82 @@
+{
+  "model_key": "lstm",
+  "model_name": "LSTM",
+  "seed": 52,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 5300,
+    "val_sequences": 670,
+    "test_sequences": 670,
+    "train_sample_start": "1997-08-11",
+    "train_sample_end": "2018-08-30",
+    "val_sample_start": "2018-08-31",
+    "val_sample_end": "2021-04-30",
+    "test_sample_start": "2021-05-03",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 47.90063810348511,
+    "epochs_trained": 12,
+    "selected_epoch": 4,
+    "inference_ms_per_sample": 0.20772381940332707
+  },
+  "params": 31780,
+  "metrics": {
+    "Close": {
+      "MSE": 9.842588424682617,
+      "RMSE": 3.1372899809680677,
+      "MAE": 2.2567718029022217,
+      "MAPE": 1.7419947311282158,
+      "R2": 0.9872168302536011,
+      "DA": 50.14925373134328
+    },
+    "Open": {
+      "MSE": 4.147441387176514,
+      "RMSE": 2.0365267951039865,
+      "MAE": 1.188989281654358,
+      "MAPE": 0.9288681671023369,
+      "R2": 0.9946277141571045,
+      "DA": 83.88059701492537
+    },
+    "High": {
+      "MSE": 6.162240028381348,
+      "RMSE": 2.4823859547583145,
+      "MAE": 1.6708688735961914,
+      "MAPE": 1.2770334258675575,
+      "R2": 0.9920169711112976,
+      "DA": 68.95522388059702
+    },
+    "Low": {
+      "MSE": 6.247056484222412,
+      "RMSE": 2.4994112275138742,
+      "MAE": 1.6850754022598267,
+      "MAPE": 1.3215876184403896,
+      "R2": 0.9918889403343201,
+      "DA": 70.1492537313433
+    },
+    "Model": {
+      "Avg_R2": 0.9914376139640808,
+      "Avg_DA": 68.28358208955225,
+      "Avg_MAPE": 1.317370985634625,
+      "Close_DA": 50.14925373134328,
+      "Min_DA": 50.14925373134328
+    }
+  }
+}

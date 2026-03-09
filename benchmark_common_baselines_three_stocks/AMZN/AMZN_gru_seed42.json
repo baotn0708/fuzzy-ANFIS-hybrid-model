@@ -1,0 +1,82 @@
+{
+  "model_key": "gru",
+  "model_name": "GRU",
+  "seed": 42,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 5300,
+    "val_sequences": 670,
+    "test_sequences": 670,
+    "train_sample_start": "1997-08-11",
+    "train_sample_end": "2018-08-30",
+    "val_sample_start": "2018-08-31",
+    "val_sample_end": "2021-04-30",
+    "test_sample_start": "2021-05-03",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 47.26265788078308,
+    "epochs_trained": 12,
+    "selected_epoch": 10,
+    "inference_ms_per_sample": 0.1728308462690566
+  },
+  "params": 24420,
+  "metrics": {
+    "Close": {
+      "MSE": 9.86500072479248,
+      "RMSE": 3.140859870289103,
+      "MAE": 2.2640905380249023,
+      "MAPE": 1.746782660484314,
+      "R2": 0.9871877431869507,
+      "DA": 49.701492537313435
+    },
+    "Open": {
+      "MSE": 4.123414993286133,
+      "RMSE": 2.030619361989374,
+      "MAE": 1.1914303302764893,
+      "MAPE": 0.9312142618000507,
+      "R2": 0.9946588277816772,
+      "DA": 84.17910447761194
+    },
+    "High": {
+      "MSE": 6.277968406677246,
+      "RMSE": 2.505587437444011,
+      "MAE": 1.6982396841049194,
+      "MAPE": 1.2945846654474735,
+      "R2": 0.9918670058250427,
+      "DA": 69.55223880597015
+    },
+    "Low": {
+      "MSE": 6.212707042694092,
+      "RMSE": 2.492530249103126,
+      "MAE": 1.6763246059417725,
+      "MAPE": 1.3111837208271027,
+      "R2": 0.9919335842132568,
+      "DA": 70.44776119402985
+    },
+    "Model": {
+      "Avg_R2": 0.9914117902517319,
+      "Avg_DA": 68.47014925373134,
+      "Avg_MAPE": 1.3209413271397352,
+      "Close_DA": 49.701492537313435,
+      "Min_DA": 49.701492537313435
+    }
+  }
+}
