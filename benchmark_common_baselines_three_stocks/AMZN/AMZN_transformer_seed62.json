@@ -1,0 +1,82 @@
+{
+  "model_key": "transformer",
+  "model_name": "Transformer",
+  "seed": 62,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 5300,
+    "val_sequences": 670,
+    "test_sequences": 670,
+    "train_sample_start": "1997-08-11",
+    "train_sample_end": "2018-08-30",
+    "val_sample_start": "2018-08-31",
+    "val_sample_end": "2021-04-30",
+    "test_sample_start": "2021-05-03",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 70.5738639831543,
+    "epochs_trained": 12,
+    "selected_epoch": 2,
+    "inference_ms_per_sample": 0.19204912835842003
+  },
+  "params": 2952,
+  "metrics": {
+    "Close": {
+      "MSE": 9.89150619506836,
+      "RMSE": 3.1450765006702714,
+      "MAE": 2.2661800384521484,
+      "MAPE": 1.750483177602291,
+      "R2": 0.9871532917022705,
+      "DA": 48.95522388059702
+    },
+    "Open": {
+      "MSE": 4.1286940574646,
+      "RMSE": 2.031918811730577,
+      "MAE": 1.18683660030365,
+      "MAPE": 0.9276105090975761,
+      "R2": 0.9946519732475281,
+      "DA": 83.13432835820895
+    },
+    "High": {
+      "MSE": 6.652163028717041,
+      "RMSE": 2.579178750826906,
+      "MAE": 1.7681174278259277,
+      "MAPE": 1.3444812037050724,
+      "R2": 0.9913822412490845,
+      "DA": 66.26865671641791
+    },
+    "Low": {
+      "MSE": 6.360049724578857,
+      "RMSE": 2.5219139011034573,
+      "MAE": 1.7126379013061523,
+      "MAPE": 1.3451619073748589,
+      "R2": 0.9917422533035278,
+      "DA": 68.95522388059702
+    },
+    "Model": {
+      "Avg_R2": 0.9912324398756027,
+      "Avg_DA": 66.82835820895522,
+      "Avg_MAPE": 1.3419341994449496,
+      "Close_DA": 48.95522388059702,
+      "Min_DA": 48.95522388059702
+    }
+  }
+}
