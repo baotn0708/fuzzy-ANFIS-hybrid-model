@@ -36,7 +36,7 @@ snapshot_status() {
 }
 
 commit_and_push_if_changed() {
-    git add -- "$OUTPUT_DIR" 2>/dev/null || true
+    git add -f -- "$OUTPUT_DIR" 2>/dev/null || true
     git add -f -- "$STATUS_FILE"
 
     if git diff --cached --quiet -- "$OUTPUT_DIR" "$STATUS_FILE"; then
