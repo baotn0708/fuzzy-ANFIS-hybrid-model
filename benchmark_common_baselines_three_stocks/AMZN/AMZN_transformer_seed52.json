@@ -1,0 +1,82 @@
+{
+  "model_key": "transformer",
+  "model_name": "Transformer",
+  "seed": 52,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 5300,
+    "val_sequences": 670,
+    "test_sequences": 670,
+    "train_sample_start": "1997-08-11",
+    "train_sample_end": "2018-08-30",
+    "val_sample_start": "2018-08-31",
+    "val_sample_end": "2021-04-30",
+    "test_sample_start": "2021-05-03",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 66.45943188667297,
+    "epochs_trained": 12,
+    "selected_epoch": 1,
+    "inference_ms_per_sample": 0.20495310895492014
+  },
+  "params": 2952,
+  "metrics": {
+    "Close": {
+      "MSE": 9.888583183288574,
+      "RMSE": 3.144611769883299,
+      "MAE": 2.262176513671875,
+      "MAPE": 1.7468515783548355,
+      "R2": 0.9871571063995361,
+      "DA": 51.49253731343284
+    },
+    "Open": {
+      "MSE": 4.1266655921936035,
+      "RMSE": 2.0314196002287668,
+      "MAE": 1.18212890625,
+      "MAPE": 0.9247476235032082,
+      "R2": 0.9946545958518982,
+      "DA": 83.28358208955224
+    },
+    "High": {
+      "MSE": 6.5302252769470215,
+      "RMSE": 2.5554305462968507,
+      "MAE": 1.7455708980560303,
+      "MAPE": 1.3367308303713799,
+      "R2": 0.991540253162384,
+      "DA": 67.76119402985074
+    },
+    "Low": {
+      "MSE": 6.457767486572266,
+      "RMSE": 2.541213782146686,
+      "MAE": 1.6964789628982544,
+      "MAPE": 1.3348571956157684,
+      "R2": 0.991615355014801,
+      "DA": 68.65671641791045
+    },
+    "Model": {
+      "Avg_R2": 0.9912418276071548,
+      "Avg_DA": 67.79850746268656,
+      "Avg_MAPE": 1.335796806961298,
+      "Close_DA": 51.49253731343284,
+      "Min_DA": 51.49253731343284
+    }
+  }
+}

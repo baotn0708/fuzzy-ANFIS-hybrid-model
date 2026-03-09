@@ -1,0 +1,82 @@
+{
+  "model_key": "transformer",
+  "model_name": "Transformer",
+  "seed": 42,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 5300,
+    "val_sequences": 670,
+    "test_sequences": 670,
+    "train_sample_start": "1997-08-11",
+    "train_sample_end": "2018-08-30",
+    "val_sample_start": "2018-08-31",
+    "val_sample_end": "2021-04-30",
+    "test_sample_start": "2021-05-03",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 66.39575099945068,
+    "epochs_trained": 12,
+    "selected_epoch": 11,
+    "inference_ms_per_sample": 0.18272350746327046
+  },
+  "params": 2952,
+  "metrics": {
+    "Close": {
+      "MSE": 10.116222381591797,
+      "RMSE": 3.180600946612416,
+      "MAE": 2.305300712585449,
+      "MAPE": 1.7762640491127968,
+      "R2": 0.9868614673614502,
+      "DA": 50.0
+    },
+    "Open": {
+      "MSE": 4.221409797668457,
+      "RMSE": 2.054606969147252,
+      "MAE": 1.2071399688720703,
+      "MAPE": 0.9422612376511097,
+      "R2": 0.9945318698883057,
+      "DA": 84.17910447761194
+    },
+    "High": {
+      "MSE": 6.277763366699219,
+      "RMSE": 2.5055465205617753,
+      "MAE": 1.6977901458740234,
+      "MAPE": 1.2928186915814877,
+      "R2": 0.9918673038482666,
+      "DA": 68.2089552238806
+    },
+    "Low": {
+      "MSE": 6.587336540222168,
+      "RMSE": 2.5665807098593585,
+      "MAE": 1.6945111751556396,
+      "MAPE": 1.3345648534595966,
+      "R2": 0.9914471507072449,
+      "DA": 70.0
+    },
+    "Model": {
+      "Avg_R2": 0.9911769479513168,
+      "Avg_DA": 68.09701492537313,
+      "Avg_MAPE": 1.3364772079512477,
+      "Close_DA": 50.0,
+      "Min_DA": 50.0
+    }
+  }
+}
