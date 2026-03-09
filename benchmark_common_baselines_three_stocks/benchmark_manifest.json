@@ -1,0 +1,43 @@
+{
+  "date": "2026-03-10 05:11:21",
+  "stocks": [
+    "AMZN",
+    "JPM",
+    "TSLA"
+  ],
+  "models": [
+    "original",
+    "arima",
+    "svr",
+    "knn",
+    "random_forest",
+    "xgboost",
+    "mlp",
+    "lstm",
+    "gru",
+    "cnn_lstm",
+    "transformer"
+  ],
+  "seeds": [
+    42,
+    52,
+    62
+  ],
+  "train_ratio": 0.8,
+  "val_ratio": 0.1,
+  "look_back": 60,
+  "source_mode": "raw",
+  "paper_baselines": [
+    "ARIMA",
+    "SVR",
+    "KNN",
+    "Random Forest",
+    "XGBoost",
+    "MLP",
+    "LSTM",
+    "GRU",
+    "CNN-LSTM",
+    "Transformer"
+  ],
+  "old_model_input": "OHLC-derived 6 features"
+}
