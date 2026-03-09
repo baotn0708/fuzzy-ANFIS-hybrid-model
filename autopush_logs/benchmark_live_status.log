@@ -1,11 +1,11 @@
-Timestamp: 2026-03-10 05:26:09 +0700
+Timestamp: 2026-03-10 05:29:10 +0700
 Branch(local): main
-HEAD(local): 4797af9
+HEAD(local): 9756886
 Remote branch: codex/benchmark-live-20260310
 
 Running benchmark processes:
-62090       00:00   0.0  0.0 rg benchmark_paper_baselines_vs_old_new.py|benchmark_common_baselines_three_stocks
-52708       14:52  99.6  5.6 /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python benchmark_paper_baselines_vs_old_new.py --stocks AMZN,JPM,TSLA --source-mode raw --models original,arima,svr,knn,random_forest,xgboost,mlp,lstm,gru,cnn_lstm,transformer --seeds 42,52,62 --epochs 12 --original-epochs 150 --output-dir benchmark_common_baselines_three_stocks
+65193       00:00   0.0  0.0 rg benchmark_paper_baselines_vs_old_new.py|benchmark_common_baselines_three_stocks
+52708       17:53 103.3  5.9 /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python benchmark_paper_baselines_vs_old_new.py --stocks AMZN,JPM,TSLA --source-mode raw --models original,arima,svr,knn,random_forest,xgboost,mlp,lstm,gru,cnn_lstm,transformer --seeds 42,52,62 --epochs 12 --original-epochs 150 --output-dir benchmark_common_baselines_three_stocks
 
 Output files:
 benchmark_common_baselines_three_stocks/AMZN/AMZN_original_seed42.json
