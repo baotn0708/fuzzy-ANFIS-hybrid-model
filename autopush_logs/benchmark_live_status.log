@@ -1,9 +1,16 @@
-Timestamp: 2026-03-10 05:24:08 +0700
+Timestamp: 2026-03-10 05:26:09 +0700
+Branch(local): main
+HEAD(local): 4797af9
+Remote branch: codex/benchmark-live-20260310
+
 Running benchmark processes:
-61416       00:00   0.0  0.0 /bin/zsh -c mkdir -p autopush_logs && { echo "Timestamp: $(date '+%Y-%m-%d %H:%M:%S %z')"; echo "Running benchmark processes:"; ps -Ao pid,etime,%cpu,%mem,command | rg 'benchmark_paper_baselines_vs_old_new.py|benchmark_common_baselines_three_stocks' || true; echo; echo "Output files:"; find benchmark_common_baselines_three_stocks -maxdepth 3 -type f 2>/dev/null | sort || true; } > autopush_logs/benchmark_live_status.log
-61422       00:00   0.0  0.0 rg benchmark_paper_baselines_vs_old_new.py|benchmark_common_baselines_three_stocks
-52708       12:51  92.0  5.0 /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python benchmark_paper_baselines_vs_old_new.py --stocks AMZN,JPM,TSLA --source-mode raw --models original,arima,svr,knn,random_forest,xgboost,mlp,lstm,gru,cnn_lstm,transformer --seeds 42,52,62 --epochs 12 --original-epochs 150 --output-dir benchmark_common_baselines_three_stocks
+62090       00:00   0.0  0.0 rg benchmark_paper_baselines_vs_old_new.py|benchmark_common_baselines_three_stocks
+52708       14:52  99.6  5.6 /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python benchmark_paper_baselines_vs_old_new.py --stocks AMZN,JPM,TSLA --source-mode raw --models original,arima,svr,knn,random_forest,xgboost,mlp,lstm,gru,cnn_lstm,transformer --seeds 42,52,62 --epochs 12 --original-epochs 150 --output-dir benchmark_common_baselines_three_stocks
 
 Output files:
 benchmark_common_baselines_three_stocks/AMZN/AMZN_original_seed42.json
 benchmark_common_baselines_three_stocks/benchmark_manifest.json
+
+Recent git status for tracked benchmark artifacts:
+ M autopush_logs/benchmark_live_status.log
+----
