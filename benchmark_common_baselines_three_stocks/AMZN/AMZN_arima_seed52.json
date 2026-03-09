@@ -1,0 +1,90 @@
+{
+  "model_key": "arima",
+  "model_name": "ARIMA",
+  "seed": 52,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ],
+    "input_format": "univariate_return_series",
+    "order": [
+      1,
+      0,
+      1
+    ],
+    "selection_target": "Close"
+  },
+  "split_info": {
+    "train_sequences": 5300,
+    "val_sequences": 670,
+    "test_sequences": 670,
+    "train_sample_start": "1997-08-11",
+    "train_sample_end": "2018-08-30",
+    "val_sample_start": "2018-08-31",
+    "val_sample_end": "2021-04-30",
+    "test_sample_start": "2021-05-03",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 56.87465500831604,
+    "epochs_trained": 0,
+    "selected_epoch": 0,
+    "inference_ms_per_sample": 0.0,
+    "arima_refit_time_sec": 4.734188795089722
+  },
+  "params": 16,
+  "metrics": {
+    "Close": {
+      "MSE": 9.93445873260498,
+      "RMSE": 3.1518976399313763,
+      "MAE": 2.2708990573883057,
+      "MAPE": 1.7525101080536842,
+      "R2": 0.9870975017547607,
+      "DA": 49.850746268656714
+    },
+    "Open": {
+      "MSE": 4.124659061431885,
+      "RMSE": 2.0309256661512465,
+      "MAE": 1.1899750232696533,
+      "MAPE": 0.9309658780694008,
+      "R2": 0.9946572184562683,
+      "DA": 83.5820895522388
+    },
+    "High": {
+      "MSE": 6.40795373916626,
+      "RMSE": 2.5313936357600055,
+      "MAE": 1.7069392204284668,
+      "MAPE": 1.3011399656534195,
+      "R2": 0.9916986227035522,
+      "DA": 68.80597014925374
+    },
+    "Low": {
+      "MSE": 6.255076885223389,
+      "RMSE": 2.501015170930274,
+      "MAE": 1.6909369230270386,
+      "MAPE": 1.3243293389678001,
+      "R2": 0.9918785691261292,
+      "DA": 70.44776119402985
+    },
+    "Model": {
+      "Avg_R2": 0.9913329780101776,
+      "Avg_DA": 68.17164179104478,
+      "Avg_MAPE": 1.3272363226860762,
+      "Close_DA": 49.850746268656714,
+      "Min_DA": 49.850746268656714
+    }
+  }
+}
