@@ -1,0 +1,82 @@
+{
+  "model_key": "transformer",
+  "model_name": "Transformer",
+  "seed": 42,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 8772,
+    "val_sequences": 1104,
+    "test_sequences": 1104,
+    "train_sample_start": "1980-06-11",
+    "train_sample_end": "2015-03-23",
+    "val_sample_start": "2015-03-24",
+    "val_sample_end": "2019-08-09",
+    "test_sample_start": "2019-08-12",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 88.35239601135254,
+    "epochs_trained": 12,
+    "selected_epoch": 4,
+    "inference_ms_per_sample": 0.1577269402174431
+  },
+  "params": 2952,
+  "metrics": {
+    "Close": {
+      "MSE": 4.586816787719727,
+      "RMSE": 2.141685501589747,
+      "MAE": 1.5452381372451782,
+      "MAPE": 1.3945781625807285,
+      "R2": 0.9901240468025208,
+      "DA": 48.731884057971016
+    },
+    "Open": {
+      "MSE": 2.123105764389038,
+      "RMSE": 1.457088111401997,
+      "MAE": 0.9438947439193726,
+      "MAPE": 0.8645470254123211,
+      "R2": 0.9954143166542053,
+      "DA": 79.80072463768117
+    },
+    "High": {
+      "MSE": 3.2224271297454834,
+      "RMSE": 1.7951120103618836,
+      "MAE": 1.236865520477295,
+      "MAPE": 1.1059468612074852,
+      "R2": 0.993015706539154,
+      "DA": 68.84057971014492
+    },
+    "Low": {
+      "MSE": 3.249316930770874,
+      "RMSE": 1.8025861784588482,
+      "MAE": 1.252811312675476,
+      "MAPE": 1.144604105502367,
+      "R2": 0.993020236492157,
+      "DA": 65.48913043478261
+    },
+    "Model": {
+      "Avg_R2": 0.9928935766220093,
+      "Avg_DA": 65.71557971014494,
+      "Avg_MAPE": 1.1274190386757255,
+      "Close_DA": 48.731884057971016,
+      "Min_DA": 48.731884057971016
+    }
+  }
+}

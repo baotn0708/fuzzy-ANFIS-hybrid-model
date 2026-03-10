@@ -1,0 +1,82 @@
+{
+  "model_key": "cnn_lstm",
+  "model_name": "CNN-LSTM",
+  "seed": 62,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 8772,
+    "val_sequences": 1104,
+    "test_sequences": 1104,
+    "train_sample_start": "1980-06-11",
+    "train_sample_end": "2015-03-23",
+    "val_sample_start": "2015-03-24",
+    "val_sample_end": "2019-08-09",
+    "test_sample_start": "2019-08-12",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 75.93121004104614,
+    "epochs_trained": 12,
+    "selected_epoch": 8,
+    "inference_ms_per_sample": 0.22175403804353203
+  },
+  "params": 47844,
+  "metrics": {
+    "Close": {
+      "MSE": 4.552101135253906,
+      "RMSE": 2.133565357624159,
+      "MAE": 1.5260616540908813,
+      "MAPE": 1.3813899829983711,
+      "R2": 0.9901987910270691,
+      "DA": 51.721014492753625
+    },
+    "Open": {
+      "MSE": 2.1211097240448,
+      "RMSE": 1.4564030088010667,
+      "MAE": 0.9422863721847534,
+      "MAPE": 0.8635114878416061,
+      "R2": 0.9954186081886292,
+      "DA": 79.61956521739131
+    },
+    "High": {
+      "MSE": 3.1204843521118164,
+      "RMSE": 1.7664892731380557,
+      "MAE": 1.2154929637908936,
+      "MAPE": 1.0854938998818398,
+      "R2": 0.9932366609573364,
+      "DA": 69.02173913043478
+    },
+    "Low": {
+      "MSE": 3.1411540508270264,
+      "RMSE": 1.77233011903173,
+      "MAE": 1.2194116115570068,
+      "MAPE": 1.1140601709485054,
+      "R2": 0.9932525753974915,
+      "DA": 67.7536231884058
+    },
+    "Model": {
+      "Avg_R2": 0.9930266588926315,
+      "Avg_DA": 67.02898550724638,
+      "Avg_MAPE": 1.1111138854175806,
+      "Close_DA": 51.721014492753625,
+      "Min_DA": 51.721014492753625
+    }
+  }
+}
