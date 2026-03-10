@@ -1,0 +1,82 @@
+{
+  "model_key": "transformer",
+  "model_name": "Transformer",
+  "seed": 62,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 8772,
+    "val_sequences": 1104,
+    "test_sequences": 1104,
+    "train_sample_start": "1980-06-11",
+    "train_sample_end": "2015-03-23",
+    "val_sample_start": "2015-03-24",
+    "val_sample_end": "2019-08-09",
+    "test_sample_start": "2019-08-12",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 89.62069582939148,
+    "epochs_trained": 12,
+    "selected_epoch": 4,
+    "inference_ms_per_sample": 0.16182752083427593
+  },
+  "params": 2952,
+  "metrics": {
+    "Close": {
+      "MSE": 4.545749664306641,
+      "RMSE": 2.1320763739384763,
+      "MAE": 1.5265696048736572,
+      "MAPE": 1.381518505513668,
+      "R2": 0.9902125000953674,
+      "DA": 51.63043478260869
+    },
+    "Open": {
+      "MSE": 2.1256308555603027,
+      "RMSE": 1.4579543393262708,
+      "MAE": 0.9418011903762817,
+      "MAPE": 0.86329635232687,
+      "R2": 0.995408833026886,
+      "DA": 79.61956521739131
+    },
+    "High": {
+      "MSE": 3.221761465072632,
+      "RMSE": 1.7949265904411333,
+      "MAE": 1.2318410873413086,
+      "MAPE": 1.101155485957861,
+      "R2": 0.9930171370506287,
+      "DA": 68.56884057971014
+    },
+    "Low": {
+      "MSE": 3.2386207580566406,
+      "RMSE": 1.7996168364562053,
+      "MAE": 1.2254817485809326,
+      "MAPE": 1.1235997080802917,
+      "R2": 0.9930432438850403,
+      "DA": 67.84420289855072
+    },
+    "Model": {
+      "Avg_R2": 0.9929204285144806,
+      "Avg_DA": 66.91576086956522,
+      "Avg_MAPE": 1.1173925129696727,
+      "Close_DA": 51.63043478260869,
+      "Min_DA": 51.63043478260869
+    }
+  }
+}
