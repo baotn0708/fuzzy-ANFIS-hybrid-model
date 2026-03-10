@@ -1,0 +1,82 @@
+{
+  "model_key": "gru",
+  "model_name": "GRU",
+  "seed": 62,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 8772,
+    "val_sequences": 1104,
+    "test_sequences": 1104,
+    "train_sample_start": "1980-06-11",
+    "train_sample_end": "2015-03-23",
+    "val_sample_start": "2015-03-24",
+    "val_sample_end": "2019-08-09",
+    "test_sample_start": "2019-08-12",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 70.75931191444397,
+    "epochs_trained": 12,
+    "selected_epoch": 4,
+    "inference_ms_per_sample": 0.2143291440220771
+  },
+  "params": 24420,
+  "metrics": {
+    "Close": {
+      "MSE": 4.546751022338867,
+      "RMSE": 2.132311192659005,
+      "MAE": 1.5268183946609497,
+      "MAPE": 1.3812345452606678,
+      "R2": 0.9902103543281555,
+      "DA": 48.460144927536234
+    },
+    "Open": {
+      "MSE": 2.131159543991089,
+      "RMSE": 1.4598491511081166,
+      "MAE": 0.9414618611335754,
+      "MAPE": 0.8629092015326023,
+      "R2": 0.9953969120979309,
+      "DA": 79.52898550724638
+    },
+    "High": {
+      "MSE": 3.1716809272766113,
+      "RMSE": 1.7809213703239712,
+      "MAE": 1.2207081317901611,
+      "MAPE": 1.0922915302217007,
+      "R2": 0.9931256771087646,
+      "DA": 67.30072463768117
+    },
+    "Low": {
+      "MSE": 3.006516695022583,
+      "RMSE": 1.7339309948849126,
+      "MAE": 1.2129677534103394,
+      "MAPE": 1.105195377022028,
+      "R2": 0.9935418367385864,
+      "DA": 68.47826086956522
+    },
+    "Model": {
+      "Avg_R2": 0.9930686950683594,
+      "Avg_DA": 65.94202898550725,
+      "Avg_MAPE": 1.1104076635092497,
+      "Close_DA": 48.460144927536234,
+      "Min_DA": 48.460144927536234
+    }
+  }
+}

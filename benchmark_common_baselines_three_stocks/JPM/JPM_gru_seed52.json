@@ -1,0 +1,82 @@
+{
+  "model_key": "gru",
+  "model_name": "GRU",
+  "seed": 52,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 8772,
+    "val_sequences": 1104,
+    "test_sequences": 1104,
+    "train_sample_start": "1980-06-11",
+    "train_sample_end": "2015-03-23",
+    "val_sample_start": "2015-03-24",
+    "val_sample_end": "2019-08-09",
+    "test_sample_start": "2019-08-12",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 71.18267178535461,
+    "epochs_trained": 12,
+    "selected_epoch": 4,
+    "inference_ms_per_sample": 0.20998471467484467
+  },
+  "params": 24420,
+  "metrics": {
+    "Close": {
+      "MSE": 4.57772159576416,
+      "RMSE": 2.139561075492859,
+      "MAE": 1.528984785079956,
+      "MAPE": 1.3830957002937794,
+      "R2": 0.9901436567306519,
+      "DA": 50.0
+    },
+    "Open": {
+      "MSE": 2.1456704139709473,
+      "RMSE": 1.4648107092627864,
+      "MAE": 0.9459126591682434,
+      "MAPE": 0.8665496483445168,
+      "R2": 0.995365560054779,
+      "DA": 79.8913043478261
+    },
+    "High": {
+      "MSE": 3.1779537200927734,
+      "RMSE": 1.782681609287753,
+      "MAE": 1.2229373455047607,
+      "MAPE": 1.0922646149992943,
+      "R2": 0.9931120872497559,
+      "DA": 68.38768115942028
+    },
+    "Low": {
+      "MSE": 3.0497167110443115,
+      "RMSE": 1.746343812381832,
+      "MAE": 1.241555094718933,
+      "MAPE": 1.1283385567367077,
+      "R2": 0.9934490323066711,
+      "DA": 66.39492753623189
+    },
+    "Model": {
+      "Avg_R2": 0.9930175840854645,
+      "Avg_DA": 66.16847826086956,
+      "Avg_MAPE": 1.1175621300935745,
+      "Close_DA": 50.0,
+      "Min_DA": 50.0
+    }
+  }
+}
