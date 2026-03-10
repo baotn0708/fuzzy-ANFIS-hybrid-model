@@ -1,0 +1,82 @@
+{
+  "model_key": "cnn_lstm",
+  "model_name": "CNN-LSTM",
+  "seed": 42,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 2660,
+    "val_sequences": 340,
+    "test_sequences": 339,
+    "train_sample_start": "2010-09-23",
+    "train_sample_end": "2021-04-19",
+    "val_sample_start": "2021-04-20",
+    "val_sample_end": "2022-08-23",
+    "test_sample_start": "2022-08-24",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 22.440585136413574,
+    "epochs_trained": 10,
+    "selected_epoch": 1,
+    "inference_ms_per_sample": 0.23872492625167735
+  },
+  "params": 47844,
+  "metrics": {
+    "Close": {
+      "MSE": 55.00953674316406,
+      "RMSE": 7.416841426319162,
+      "MAE": 5.60017204284668,
+      "MAPE": 2.684086188673973,
+      "R2": 0.9731714129447937,
+      "DA": 51.62241887905604
+    },
+    "Open": {
+      "MSE": 18.625873565673828,
+      "RMSE": 4.315770332822847,
+      "MAE": 3.1449263095855713,
+      "MAPE": 1.5146837569773197,
+      "R2": 0.9909341335296631,
+      "DA": 86.72566371681415
+    },
+    "High": {
+      "MSE": 28.284271240234375,
+      "RMSE": 5.318295896265492,
+      "MAE": 4.029109954833984,
+      "MAPE": 1.8877044320106506,
+      "R2": 0.9864375591278076,
+      "DA": 74.63126843657817
+    },
+    "Low": {
+      "MSE": 32.06006622314453,
+      "RMSE": 5.662160914628313,
+      "MAE": 4.2017598152160645,
+      "MAPE": 2.0798927173018456,
+      "R2": 0.9841372966766357,
+      "DA": 71.976401179941
+    },
+    "Model": {
+      "Avg_R2": 0.983670100569725,
+      "Avg_DA": 71.23893805309734,
+      "Avg_MAPE": 2.0415917737409472,
+      "Close_DA": 51.62241887905604,
+      "Min_DA": 51.62241887905604
+    }
+  }
+}

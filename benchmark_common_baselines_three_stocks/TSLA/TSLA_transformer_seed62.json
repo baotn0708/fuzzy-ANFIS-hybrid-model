@@ -1,0 +1,82 @@
+{
+  "model_key": "transformer",
+  "model_name": "Transformer",
+  "seed": 62,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 2660,
+    "val_sequences": 340,
+    "test_sequences": 339,
+    "train_sample_start": "2010-09-23",
+    "train_sample_end": "2021-04-19",
+    "val_sample_start": "2021-04-20",
+    "val_sample_end": "2022-08-23",
+    "test_sample_start": "2022-08-24",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 24.973700284957886,
+    "epochs_trained": 9,
+    "selected_epoch": 9,
+    "inference_ms_per_sample": 0.23171570796406538
+  },
+  "params": 2952,
+  "metrics": {
+    "Close": {
+      "MSE": 55.551692962646484,
+      "RMSE": 7.4533008098859455,
+      "MAE": 5.643294811248779,
+      "MAPE": 2.7030469849705696,
+      "R2": 0.9729070067405701,
+      "DA": 50.14749262536873
+    },
+    "Open": {
+      "MSE": 19.234107971191406,
+      "RMSE": 4.385670754991921,
+      "MAE": 3.213393211364746,
+      "MAPE": 1.546982116997242,
+      "R2": 0.9906380772590637,
+      "DA": 86.4306784660767
+    },
+    "High": {
+      "MSE": 29.226436614990234,
+      "RMSE": 5.406148038575177,
+      "MAE": 4.10413122177124,
+      "MAPE": 1.9213294610381126,
+      "R2": 0.9859858155250549,
+      "DA": 72.56637168141593
+    },
+    "Low": {
+      "MSE": 31.74117088317871,
+      "RMSE": 5.633930322889937,
+      "MAE": 4.1702351570129395,
+      "MAPE": 2.0638125017285347,
+      "R2": 0.9842950701713562,
+      "DA": 71.976401179941
+    },
+    "Model": {
+      "Avg_R2": 0.9834564924240112,
+      "Avg_DA": 70.28023598820059,
+      "Avg_MAPE": 2.0587927661836147,
+      "Close_DA": 50.14749262536873,
+      "Min_DA": 50.14749262536873
+    }
+  }
+}

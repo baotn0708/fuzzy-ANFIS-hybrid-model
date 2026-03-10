@@ -1,0 +1,4 @@
+Stock,Close_DA_Winner,Close_R2_Winner,Close_MAPE_Winner
+AMZN,SVR,LSTM,LSTM
+JPM,Random Forest,Random Forest,ARIMA
+TSLA,ARIMA,Random Forest,CNN-LSTM

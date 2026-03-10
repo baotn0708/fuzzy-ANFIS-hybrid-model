@@ -1,0 +1,82 @@
+{
+  "model_key": "cnn_lstm",
+  "model_name": "CNN-LSTM",
+  "seed": 52,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 2660,
+    "val_sequences": 340,
+    "test_sequences": 339,
+    "train_sample_start": "2010-09-23",
+    "train_sample_end": "2021-04-19",
+    "val_sample_start": "2021-04-20",
+    "val_sample_end": "2022-08-23",
+    "test_sample_start": "2022-08-24",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 20.82154893875122,
+    "epochs_trained": 9,
+    "selected_epoch": 1,
+    "inference_ms_per_sample": 0.2229112595905516
+  },
+  "params": 47844,
+  "metrics": {
+    "Close": {
+      "MSE": 55.60859298706055,
+      "RMSE": 7.457116935321623,
+      "MAE": 5.626408100128174,
+      "MAPE": 2.6948265731334686,
+      "R2": 0.9728792905807495,
+      "DA": 51.62241887905604
+    },
+    "Open": {
+      "MSE": 19.173625946044922,
+      "RMSE": 4.3787699124348745,
+      "MAE": 3.2078707218170166,
+      "MAPE": 1.5428939834237099,
+      "R2": 0.9906675219535828,
+      "DA": 86.72566371681415
+    },
+    "High": {
+      "MSE": 28.33635902404785,
+      "RMSE": 5.323190680789845,
+      "MAE": 4.032212734222412,
+      "MAPE": 1.8883271142840385,
+      "R2": 0.9864125847816467,
+      "DA": 74.92625368731564
+    },
+    "Low": {
+      "MSE": 31.577716827392578,
+      "RMSE": 5.619405380233088,
+      "MAE": 4.182769298553467,
+      "MAPE": 2.0657015964388847,
+      "R2": 0.9843759536743164,
+      "DA": 72.27138643067846
+    },
+    "Model": {
+      "Avg_R2": 0.9835838377475739,
+      "Avg_DA": 71.38643067846607,
+      "Avg_MAPE": 2.0479373168200254,
+      "Close_DA": 51.62241887905604,
+      "Min_DA": 51.62241887905604
+    }
+  }
+}

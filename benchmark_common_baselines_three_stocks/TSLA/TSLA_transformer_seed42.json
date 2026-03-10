@@ -1,0 +1,82 @@
+{
+  "model_key": "transformer",
+  "model_name": "Transformer",
+  "seed": 42,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 2660,
+    "val_sequences": 340,
+    "test_sequences": 339,
+    "train_sample_start": "2010-09-23",
+    "train_sample_end": "2021-04-19",
+    "val_sample_start": "2021-04-20",
+    "val_sample_end": "2022-08-23",
+    "test_sample_start": "2022-08-24",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 30.22659993171692,
+    "epochs_trained": 12,
+    "selected_epoch": 8,
+    "inference_ms_per_sample": 0.22829007080056948
+  },
+  "params": 2952,
+  "metrics": {
+    "Close": {
+      "MSE": 54.939903259277344,
+      "RMSE": 7.412145658260997,
+      "MAE": 5.640165328979492,
+      "MAPE": 2.6983827352523804,
+      "R2": 0.9732053875923157,
+      "DA": 48.96755162241888
+    },
+    "Open": {
+      "MSE": 18.743206024169922,
+      "RMSE": 4.329342447089387,
+      "MAE": 3.1494479179382324,
+      "MAPE": 1.5167980454862118,
+      "R2": 0.9908769726753235,
+      "DA": 87.90560471976401
+    },
+    "High": {
+      "MSE": 29.22116470336914,
+      "RMSE": 5.405660431748293,
+      "MAE": 4.035345077514648,
+      "MAPE": 1.8950976431369781,
+      "R2": 0.9859883189201355,
+      "DA": 76.10619469026548
+    },
+    "Low": {
+      "MSE": 31.938894271850586,
+      "RMSE": 5.651450634292985,
+      "MAE": 4.184970855712891,
+      "MAPE": 2.071099355816841,
+      "R2": 0.9841972589492798,
+      "DA": 71.38643067846607
+    },
+    "Model": {
+      "Avg_R2": 0.9835669845342636,
+      "Avg_DA": 71.09144542772862,
+      "Avg_MAPE": 2.045344444923103,
+      "Close_DA": 48.96755162241888,
+      "Min_DA": 48.96755162241888
+    }
+  }
+}
