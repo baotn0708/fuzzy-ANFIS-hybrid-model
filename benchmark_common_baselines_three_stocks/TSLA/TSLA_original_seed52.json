@@ -1,0 +1,81 @@
+{
+  "model_key": "original_feature_group_anfis_bilstm",
+  "model_name": "Original Feature-Group ANFIS + BiLSTM",
+  "seed": 52,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 2660,
+    "val_sequences": 340,
+    "test_sequences": 339,
+    "train_sample_start": "2010-09-23",
+    "train_sample_end": "2021-04-19",
+    "val_sample_start": "2021-04-20",
+    "val_sample_end": "2022-08-23",
+    "test_sample_start": "2022-08-24",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 232.76649594306946,
+    "epochs_trained": 22,
+    "inference_ms_per_sample": 1.1637873657784015
+  },
+  "params": 81212,
+  "metrics": {
+    "Close": {
+      "MSE": 56.25056457519531,
+      "RMSE": 7.500037638251912,
+      "MAE": 5.6561360359191895,
+      "MAPE": 2.715640142560005,
+      "R2": 0.9725661873817444,
+      "DA": 52.21238938053098
+    },
+    "Open": {
+      "MSE": 18.780607223510742,
+      "RMSE": 4.3336597955435705,
+      "MAE": 3.153127908706665,
+      "MAPE": 1.52212493121624,
+      "R2": 0.990858793258667,
+      "DA": 85.84070796460178
+    },
+    "High": {
+      "MSE": 29.449615478515625,
+      "RMSE": 5.426749992262001,
+      "MAE": 4.1472649574279785,
+      "MAPE": 1.9478926435112953,
+      "R2": 0.9858787655830383,
+      "DA": 74.63126843657817
+    },
+    "Low": {
+      "MSE": 31.490718841552734,
+      "RMSE": 5.611659187936553,
+      "MAE": 4.189050674438477,
+      "MAPE": 2.0749427378177643,
+      "R2": 0.9844189882278442,
+      "DA": 71.09144542772862
+    },
+    "Model": {
+      "Avg_R2": 0.9834306836128235,
+      "Avg_DA": 70.94395280235989,
+      "Avg_MAPE": 2.065150113776326,
+      "Close_DA": 52.21238938053098,
+      "Min_DA": 52.21238938053098
+    }
+  }
+}
