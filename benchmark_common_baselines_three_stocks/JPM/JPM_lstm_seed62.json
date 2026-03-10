@@ -1,0 +1,82 @@
+{
+  "model_key": "lstm",
+  "model_name": "LSTM",
+  "seed": 62,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 8772,
+    "val_sequences": 1104,
+    "test_sequences": 1104,
+    "train_sample_start": "1980-06-11",
+    "train_sample_end": "2015-03-23",
+    "val_sample_start": "2015-03-24",
+    "val_sample_end": "2019-08-09",
+    "test_sample_start": "2019-08-12",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 71.14329600334167,
+    "epochs_trained": 12,
+    "selected_epoch": 4,
+    "inference_ms_per_sample": 0.23646237137700812
+  },
+  "params": 31780,
+  "metrics": {
+    "Close": {
+      "MSE": 4.564760208129883,
+      "RMSE": 2.136529945526129,
+      "MAE": 1.5277900695800781,
+      "MAPE": 1.3825446367263794,
+      "R2": 0.9901715517044067,
+      "DA": 52.17391304347826
+    },
+    "Open": {
+      "MSE": 2.1232221126556396,
+      "RMSE": 1.4571280357798486,
+      "MAE": 0.9433056116104126,
+      "MAPE": 0.8645483292639256,
+      "R2": 0.9954140782356262,
+      "DA": 78.98550724637681
+    },
+    "High": {
+      "MSE": 3.133613109588623,
+      "RMSE": 1.770201431924803,
+      "MAE": 1.2235867977142334,
+      "MAPE": 1.0939671657979488,
+      "R2": 0.9932081699371338,
+      "DA": 67.84420289855072
+    },
+    "Low": {
+      "MSE": 3.0476927757263184,
+      "RMSE": 1.7457642382997534,
+      "MAE": 1.2160921096801758,
+      "MAPE": 1.1081927455961704,
+      "R2": 0.9934533834457397,
+      "DA": 67.93478260869566
+    },
+    "Model": {
+      "Avg_R2": 0.9930617958307266,
+      "Avg_DA": 66.73460144927536,
+      "Avg_MAPE": 1.112313219346106,
+      "Close_DA": 52.17391304347826,
+      "Min_DA": 52.17391304347826
+    }
+  }
+}
