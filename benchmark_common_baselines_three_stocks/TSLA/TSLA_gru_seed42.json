@@ -1,0 +1,82 @@
+{
+  "model_key": "gru",
+  "model_name": "GRU",
+  "seed": 42,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 2660,
+    "val_sequences": 340,
+    "test_sequences": 339,
+    "train_sample_start": "2010-09-23",
+    "train_sample_end": "2021-04-19",
+    "val_sample_start": "2021-04-20",
+    "val_sample_end": "2022-08-23",
+    "test_sample_start": "2022-08-24",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 18.647567987442017,
+    "epochs_trained": 9,
+    "selected_epoch": 1,
+    "inference_ms_per_sample": 0.23049016814066095
+  },
+  "params": 24420,
+  "metrics": {
+    "Close": {
+      "MSE": 55.70634460449219,
+      "RMSE": 7.463668307507521,
+      "MAE": 5.640042304992676,
+      "MAPE": 2.703309990465641,
+      "R2": 0.9728316068649292,
+      "DA": 51.32743362831859
+    },
+    "Open": {
+      "MSE": 18.780540466308594,
+      "RMSE": 4.333652093362894,
+      "MAE": 3.171563148498535,
+      "MAPE": 1.526903174817562,
+      "R2": 0.9908588528633118,
+      "DA": 86.4306784660767
+    },
+    "High": {
+      "MSE": 27.95695686340332,
+      "RMSE": 5.287433863737997,
+      "MAE": 3.993290901184082,
+      "MAPE": 1.8748240545392036,
+      "R2": 0.9865944981575012,
+      "DA": 75.81120943952803
+    },
+    "Low": {
+      "MSE": 31.364957809448242,
+      "RMSE": 5.600442644063793,
+      "MAE": 4.1783623695373535,
+      "MAPE": 2.065684273838997,
+      "R2": 0.9844812154769897,
+      "DA": 71.68141592920354
+    },
+    "Model": {
+      "Avg_R2": 0.983691543340683,
+      "Avg_DA": 71.31268436578172,
+      "Avg_MAPE": 2.042680373415351,
+      "Close_DA": 51.32743362831859,
+      "Min_DA": 51.32743362831859
+    }
+  }
+}

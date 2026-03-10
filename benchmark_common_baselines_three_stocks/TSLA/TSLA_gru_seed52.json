@@ -1,0 +1,82 @@
+{
+  "model_key": "gru",
+  "model_name": "GRU",
+  "seed": 52,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 2660,
+    "val_sequences": 340,
+    "test_sequences": 339,
+    "train_sample_start": "2010-09-23",
+    "train_sample_end": "2021-04-19",
+    "val_sample_start": "2021-04-20",
+    "val_sample_end": "2022-08-23",
+    "test_sample_start": "2022-08-24",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 24.081450939178467,
+    "epochs_trained": 12,
+    "selected_epoch": 2,
+    "inference_ms_per_sample": 0.22559242773034258
+  },
+  "params": 24420,
+  "metrics": {
+    "Close": {
+      "MSE": 55.731056213378906,
+      "RMSE": 7.465323583970015,
+      "MAE": 5.637994766235352,
+      "MAPE": 2.704908512532711,
+      "R2": 0.9728195667266846,
+      "DA": 51.62241887905604
+    },
+    "Open": {
+      "MSE": 19.000207901000977,
+      "RMSE": 4.358922791355793,
+      "MAE": 3.187833070755005,
+      "MAPE": 1.5359214507043362,
+      "R2": 0.9907519221305847,
+      "DA": 85.84070796460178
+    },
+    "High": {
+      "MSE": 28.335735321044922,
+      "RMSE": 5.323132096899806,
+      "MAE": 4.0238423347473145,
+      "MAPE": 1.8875369802117348,
+      "R2": 0.9864128828048706,
+      "DA": 76.10619469026548
+    },
+    "Low": {
+      "MSE": 31.67620849609375,
+      "RMSE": 5.628162088647923,
+      "MAE": 4.171006679534912,
+      "MAPE": 2.0684661343693733,
+      "R2": 0.9843272566795349,
+      "DA": 72.27138643067846
+    },
+    "Model": {
+      "Avg_R2": 0.9835779070854187,
+      "Avg_DA": 71.46017699115043,
+      "Avg_MAPE": 2.049208269454539,
+      "Close_DA": 51.62241887905604,
+      "Min_DA": 51.62241887905604
+    }
+  }
+}

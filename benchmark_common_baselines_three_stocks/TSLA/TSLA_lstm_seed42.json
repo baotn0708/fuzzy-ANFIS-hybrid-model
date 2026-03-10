@@ -1,0 +1,82 @@
+{
+  "model_key": "lstm",
+  "model_name": "LSTM",
+  "seed": 42,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 2660,
+    "val_sequences": 340,
+    "test_sequences": 339,
+    "train_sample_start": "2010-09-23",
+    "train_sample_end": "2021-04-19",
+    "val_sample_start": "2021-04-20",
+    "val_sample_end": "2022-08-23",
+    "test_sample_start": "2022-08-24",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 25.293500900268555,
+    "epochs_trained": 12,
+    "selected_epoch": 12,
+    "inference_ms_per_sample": 0.2233035899673408
+  },
+  "params": 31780,
+  "metrics": {
+    "Close": {
+      "MSE": 56.13909149169922,
+      "RMSE": 7.492602451198063,
+      "MAE": 5.639964580535889,
+      "MAPE": 2.706005610525608,
+      "R2": 0.9726205468177795,
+      "DA": 51.32743362831859
+    },
+    "Open": {
+      "MSE": 19.100454330444336,
+      "RMSE": 4.370406655043022,
+      "MAE": 3.175071954727173,
+      "MAPE": 1.5358131378889084,
+      "R2": 0.9907031059265137,
+      "DA": 87.31563421828909
+    },
+    "High": {
+      "MSE": 29.467529296875,
+      "RMSE": 5.428400252088547,
+      "MAE": 4.087652206420898,
+      "MAPE": 1.92903783172369,
+      "R2": 0.9858701825141907,
+      "DA": 74.92625368731564
+    },
+    "Low": {
+      "MSE": 31.546672821044922,
+      "RMSE": 5.616642486490031,
+      "MAE": 4.185624122619629,
+      "MAPE": 2.072761580348015,
+      "R2": 0.9843913316726685,
+      "DA": 71.38643067846607
+    },
+    "Model": {
+      "Avg_R2": 0.9833962917327881,
+      "Avg_DA": 71.23893805309734,
+      "Avg_MAPE": 2.0609045401215553,
+      "Close_DA": 51.32743362831859,
+      "Min_DA": 51.32743362831859
+    }
+  }
+}

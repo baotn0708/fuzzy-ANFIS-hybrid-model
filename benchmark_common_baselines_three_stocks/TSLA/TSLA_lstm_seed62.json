@@ -1,0 +1,82 @@
+{
+  "model_key": "lstm",
+  "model_name": "LSTM",
+  "seed": 62,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 2660,
+    "val_sequences": 340,
+    "test_sequences": 339,
+    "train_sample_start": "2010-09-23",
+    "train_sample_end": "2021-04-19",
+    "val_sample_start": "2021-04-20",
+    "val_sample_end": "2022-08-23",
+    "test_sample_start": "2022-08-24",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 24.808341026306152,
+    "epochs_trained": 12,
+    "selected_epoch": 11,
+    "inference_ms_per_sample": 0.23116838938248746
+  },
+  "params": 31780,
+  "metrics": {
+    "Close": {
+      "MSE": 55.42268753051758,
+      "RMSE": 7.444641531364527,
+      "MAE": 5.586450576782227,
+      "MAPE": 2.680044062435627,
+      "R2": 0.9729699492454529,
+      "DA": 49.26253687315634
+    },
+    "Open": {
+      "MSE": 18.824138641357422,
+      "RMSE": 4.338679366046473,
+      "MAE": 3.1717541217803955,
+      "MAPE": 1.5299439430236816,
+      "R2": 0.990837574005127,
+      "DA": 87.02064896755162
+    },
+    "High": {
+      "MSE": 28.336727142333984,
+      "RMSE": 5.323225257523299,
+      "MAE": 4.005791664123535,
+      "MAPE": 1.8816381692886353,
+      "R2": 0.9864124059677124,
+      "DA": 76.99115044247787
+    },
+    "Low": {
+      "MSE": 32.13536071777344,
+      "RMSE": 5.66880593403703,
+      "MAE": 4.196206092834473,
+      "MAPE": 2.0756402984261513,
+      "R2": 0.9841000437736511,
+      "DA": 71.38643067846607
+    },
+    "Model": {
+      "Avg_R2": 0.9835799932479858,
+      "Avg_DA": 71.16519174041298,
+      "Avg_MAPE": 2.041816618293524,
+      "Close_DA": 49.26253687315634,
+      "Min_DA": 49.26253687315634
+    }
+  }
+}

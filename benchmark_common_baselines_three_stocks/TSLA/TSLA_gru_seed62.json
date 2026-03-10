@@ -1,0 +1,82 @@
+{
+  "model_key": "gru",
+  "model_name": "GRU",
+  "seed": 62,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 2660,
+    "val_sequences": 340,
+    "test_sequences": 339,
+    "train_sample_start": "2010-09-23",
+    "train_sample_end": "2021-04-19",
+    "val_sample_start": "2021-04-20",
+    "val_sample_end": "2022-08-23",
+    "test_sample_start": "2022-08-24",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 23.73440408706665,
+    "epochs_trained": 12,
+    "selected_epoch": 12,
+    "inference_ms_per_sample": 0.22572357521905284
+  },
+  "params": 24420,
+  "metrics": {
+    "Close": {
+      "MSE": 55.6905632019043,
+      "RMSE": 7.46261101772726,
+      "MAE": 5.6036505699157715,
+      "MAPE": 2.691979333758354,
+      "R2": 0.9728392958641052,
+      "DA": 50.442477876106196
+    },
+    "Open": {
+      "MSE": 18.724895477294922,
+      "RMSE": 4.327227227370308,
+      "MAE": 3.1837918758392334,
+      "MAPE": 1.53805585578084,
+      "R2": 0.9908859133720398,
+      "DA": 87.31563421828909
+    },
+    "High": {
+      "MSE": 27.834030151367188,
+      "RMSE": 5.275796636657557,
+      "MAE": 3.959399938583374,
+      "MAPE": 1.8656879663467407,
+      "R2": 0.9866534471511841,
+      "DA": 75.22123893805309
+    },
+    "Low": {
+      "MSE": 32.16675567626953,
+      "RMSE": 5.671574356055779,
+      "MAE": 4.191802501678467,
+      "MAPE": 2.0792394876480103,
+      "R2": 0.9840845465660095,
+      "DA": 74.04129793510324
+    },
+    "Model": {
+      "Avg_R2": 0.9836158007383347,
+      "Avg_DA": 71.75516224188792,
+      "Avg_MAPE": 2.0437406608834863,
+      "Close_DA": 50.442477876106196,
+      "Min_DA": 50.442477876106196
+    }
+  }
+}
