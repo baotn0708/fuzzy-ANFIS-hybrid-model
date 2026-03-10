@@ -1,0 +1,88 @@
+{
+  "model_key": "random_forest",
+  "model_name": "Random Forest",
+  "seed": 62,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ],
+    "input_format": "flattened_sequence",
+    "selected_hyperparams": {
+      "n_estimators": 500,
+      "max_depth": null,
+      "min_samples_leaf": 2
+    }
+  },
+  "split_info": {
+    "train_sequences": 2660,
+    "val_sequences": 340,
+    "test_sequences": 339,
+    "train_sample_start": "2010-09-23",
+    "train_sample_end": "2021-04-19",
+    "val_sample_start": "2021-04-20",
+    "val_sample_end": "2022-08-23",
+    "test_sample_start": "2022-08-24",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 222.07814717292786,
+    "epochs_trained": 0,
+    "selected_epoch": 0,
+    "inference_ms_per_sample": 0.18612881120933758
+  },
+  "params": -1,
+  "metrics": {
+    "Close": {
+      "MSE": 54.83885192871094,
+      "RMSE": 7.405325916440878,
+      "MAE": 5.638184547424316,
+      "MAPE": 2.7115104719996452,
+      "R2": 0.9732546806335449,
+      "DA": 49.557522123893804
+    },
+    "Open": {
+      "MSE": 19.005937576293945,
+      "RMSE": 4.359579977049847,
+      "MAE": 3.1963603496551514,
+      "MAPE": 1.5440704300999641,
+      "R2": 0.9907491207122803,
+      "DA": 86.72566371681415
+    },
+    "High": {
+      "MSE": 28.106056213378906,
+      "RMSE": 5.301514520717538,
+      "MAE": 4.008157253265381,
+      "MAPE": 1.8910044804215431,
+      "R2": 0.9865230321884155,
+      "DA": 76.10619469026548
+    },
+    "Low": {
+      "MSE": 31.90544319152832,
+      "RMSE": 5.648490346236622,
+      "MAE": 4.251413822174072,
+      "MAPE": 2.109287492930889,
+      "R2": 0.9842138290405273,
+      "DA": 71.38643067846607
+    },
+    "Model": {
+      "Avg_R2": 0.983685165643692,
+      "Avg_DA": 70.94395280235989,
+      "Avg_MAPE": 2.0639682188630104,
+      "Close_DA": 49.557522123893804,
+      "Min_DA": 49.557522123893804
+    }
+  }
+}
