@@ -1,0 +1,90 @@
+{
+  "model_key": "mlp",
+  "model_name": "MLP",
+  "seed": 42,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ],
+    "input_format": "flattened_sequence",
+    "selected_hyperparams": {
+      "hidden_layer_sizes": [
+        256,
+        128
+      ],
+      "alpha": 0.0001
+    }
+  },
+  "split_info": {
+    "train_sequences": 8772,
+    "val_sequences": 1104,
+    "test_sequences": 1104,
+    "train_sample_start": "1980-06-11",
+    "train_sample_end": "2015-03-23",
+    "val_sample_start": "2015-03-24",
+    "val_sample_end": "2019-08-09",
+    "test_sample_start": "2019-08-12",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 5.007680892944336,
+    "epochs_trained": 0,
+    "selected_epoch": 0,
+    "inference_ms_per_sample": 0.001682932971904676
+  },
+  "params": -1,
+  "metrics": {
+    "Close": {
+      "MSE": 5.16732120513916,
+      "RMSE": 2.273174257539259,
+      "MAE": 1.6607164144515991,
+      "MAPE": 1.5081032179296017,
+      "R2": 0.9888741970062256,
+      "DA": 49.275362318840585
+    },
+    "Open": {
+      "MSE": 2.281146764755249,
+      "RMSE": 1.510346571074086,
+      "MAE": 0.9944218993186951,
+      "MAPE": 0.9089235216379166,
+      "R2": 0.9950729608535767,
+      "DA": 76.53985507246377
+    },
+    "High": {
+      "MSE": 3.521176815032959,
+      "RMSE": 1.876479899981068,
+      "MAE": 1.3347198963165283,
+      "MAPE": 1.2001272290945053,
+      "R2": 0.9923681616783142,
+      "DA": 64.03985507246377
+    },
+    "Low": {
+      "MSE": 3.475386142730713,
+      "RMSE": 1.8642387569007122,
+      "MAE": 1.3396903276443481,
+      "MAPE": 1.2197579257190228,
+      "R2": 0.9925346374511719,
+      "DA": 62.95289855072463
+    },
+    "Model": {
+      "Avg_R2": 0.9922124892473221,
+      "Avg_DA": 63.20199275362319,
+      "Avg_MAPE": 1.2092279735952616,
+      "Close_DA": 49.275362318840585,
+      "Min_DA": 49.275362318840585
+    }
+  }
+}

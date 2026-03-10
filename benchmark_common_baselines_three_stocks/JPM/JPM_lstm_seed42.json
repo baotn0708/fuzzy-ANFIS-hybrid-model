@@ -1,0 +1,82 @@
+{
+  "model_key": "lstm",
+  "model_name": "LSTM",
+  "seed": 42,
+  "architecture": {
+    "look_back": 60,
+    "n_features": 6,
+    "feature_cols": [
+      "Close_ret",
+      "Open_ret",
+      "High_ret",
+      "Low_ret",
+      "range_pct",
+      "gap"
+    ],
+    "outputs": [
+      "next_close_ret",
+      "next_open_ret",
+      "next_high_ret",
+      "next_low_ret"
+    ]
+  },
+  "split_info": {
+    "train_sequences": 8772,
+    "val_sequences": 1104,
+    "test_sequences": 1104,
+    "train_sample_start": "1980-06-11",
+    "train_sample_end": "2015-03-23",
+    "val_sample_start": "2015-03-24",
+    "val_sample_end": "2019-08-09",
+    "test_sample_start": "2019-08-12",
+    "test_sample_end": "2023-12-28"
+  },
+  "timing": {
+    "training_time_sec": 67.19293689727783,
+    "epochs_trained": 11,
+    "selected_epoch": 1,
+    "inference_ms_per_sample": 0.24390851449326242
+  },
+  "params": 31780,
+  "metrics": {
+    "Close": {
+      "MSE": 4.5558366775512695,
+      "RMSE": 2.1344406006144254,
+      "MAE": 1.528640627861023,
+      "MAPE": 1.3830157928168774,
+      "R2": 0.9901907444000244,
+      "DA": 49.81884057971014
+    },
+    "Open": {
+      "MSE": 2.1406264305114746,
+      "RMSE": 1.4630879777072445,
+      "MAE": 0.94362473487854,
+      "MAPE": 0.864684022963047,
+      "R2": 0.995376467704773,
+      "DA": 79.07608695652173
+    },
+    "High": {
+      "MSE": 3.1533517837524414,
+      "RMSE": 1.775767941976778,
+      "MAE": 1.2174887657165527,
+      "MAPE": 1.0883173905313015,
+      "R2": 0.9931653738021851,
+      "DA": 68.75
+    },
+    "Low": {
+      "MSE": 3.102769136428833,
+      "RMSE": 1.7614678925341878,
+      "MAE": 1.2489513158798218,
+      "MAPE": 1.1335628107190132,
+      "R2": 0.9933350682258606,
+      "DA": 65.30797101449275
+    },
+    "Model": {
+      "Avg_R2": 0.9930169135332108,
+      "Avg_DA": 65.73822463768116,
+      "Avg_MAPE": 1.1173950042575598,
+      "Close_DA": 49.81884057971014,
+      "Min_DA": 49.81884057971014
+    }
+  }
+}
