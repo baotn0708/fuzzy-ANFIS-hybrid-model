@@ -7,5 +7,6 @@
 # Không bỏ qua các file có định dạng cho phép và file .gitignore
 !.gitignore
 !*.py
+!*.md
 !*.tex
 !*.pdf
