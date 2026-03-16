@@ -1,0 +1,226 @@
+\chapter{Học máy thống kê: từ rủi ro thực nghiệm đến điều chuẩn}
+
+\section{Từ dữ liệu hữu hạn đến bài toán học}
+
+Ta đã biết bài toán lý tưởng là tối thiểu hóa rủi ro kỳ vọng
+\[
+R(\theta)=\E[\ell(f_\theta(\bm{x}),y)].
+\]
+Nhưng trong thực tế, phân phối sinh dữ liệu là ẩn. Do đó, ta thay nó bằng rủi ro thực nghiệm
+\[
+\widehat{R}_n(\theta)=\frac{1}{n}\sum_{i=1}^n \ell(f_\theta(\bm{x}_i),y_i).
+\]
+Nguyên lý \emph{empirical risk minimization} (tối thiểu hóa rủi ro thực nghiệm) nói rằng ta chọn
+\[
+\hat{\theta}\in\argmin_{\theta\in\Theta}\widehat{R}_n(\theta).
+\]
+Ban đầu, nguyên lý này có vẻ quá đơn giản. Nhưng hầu hết học máy hiện đại vẫn sống trong khung này, chỉ khác ở cách chọn không gian giả thuyết \(\Theta\), cách chọn hàm mất mát, và cách điều chuẩn.
+
+Vấn đề cần cảnh báo ngay lập tức là: tối ưu hóa tập huấn luyện không đồng nghĩa với tổng quát hóa tốt. Nếu \(\Theta\) quá rộng, ta có thể học thuộc dữ liệu. Nếu \(\Theta\) quá hẹp, ta \emph{underfit} (khớp thiếu). Toàn bộ vấn đề của học máy thống kê có thể được đọc như nghệ thuật điều hòa giữa hai cực này \citep{bishop2006prml,hastie2009esl}.
+
+\section{Hồi quy tuyến tính và phương trình chuẩn}
+
+Xét mô hình
+\[
+\hat{y}_i = \bm{w}^\top \bm{x}_i + b.
+\]
+Gộp hệ số chặn vào vectơ đặc trưng bằng cách thêm cột 1, ta viết gọn
+\[
+\hat{\bm{y}} = X\bm{w},
+\]
+trong đó $X\in\R^{n\times d}$ là ma trận thiết kế. Hàm mất mát bình phương cho ta bài toán
+\[
+\min_{\bm{w}} \|X\bm{w}-\bm{y}\|_2^2.
+\]
+Gradient theo \(\bm{w}\) là
+\[
+\nabla_{\bm{w}}\|X\bm{w}-\bm{y}\|_2^2 = 2X^\top(X\bm{w}-\bm{y}).
+\]
+Cho bằng 0, ta nhận được \emph{normal equation} (phương trình chuẩn)
+\[
+X^\top X\bm{w}=X^\top \bm{y}.
+\]
+Nếu $X^\top X$ khả nghịch, nghiệm duy nhất là
+\[
+\hat{\bm{w}}=(X^\top X)^{-1}X^\top \bm{y}.
+\]
+
+\begin{remark}
+Công thức trên đẹp nhưng nguy hiểm nếu dùng máy móc. Nếu các cột của $X$ gần phụ thuộc tuyến tính, $X^\top X$ sẽ kém điều kiện. Trong thực hành, ta ưu tiên giải bình phương tối thiểu bằng QR, SVD, hoặc thêm điều chuẩn.
+\end{remark}
+
+\subsection{Góc nhìn hình học}
+
+Nghiệm bình phương tối thiểu là hình chiếu trực giao của $\bm{y}$ lên không gian cột của $X$. Sai số dư
+\[
+\bm{r} = \bm{y}-X\hat{\bm{w}}
+\]
+trực giao với mọi cột của $X$, vì
+\[
+X^\top \bm{r}=0.
+\]
+Do đó, bình phương tối thiểu không chỉ là kết quả của một phép lấy đạo hàm. Nó là kết quả của một phép chiếu hình học.
+
+\section{Đánh đổi độ chệch -- phương sai}
+
+Giả sử dữ liệu được sinh bởi
+\[
+y = f^\star(\bm{x}) + \varepsilon,\qquad \E[\varepsilon|\bm{x}] = 0,\quad \Var(\varepsilon|\bm{x})=\sigma^2.
+\]
+Xét một ước lượng \(\hat{f}\) được học từ dữ liệu mẫu. Lỗi dự báo tại điểm \(\bm{x}\) có thể tách thành
+\[
+\E\big[(\hat{f}(\bm{x})-f^\star(\bm{x}))^2\big]
+=
+\big(\E[\hat{f}(\bm{x})]-f^\star(\bm{x})\big)^2
++
+\Var(\hat{f}(\bm{x})).
+\]
+Nếu tính cả nhiễu không thể loại bỏ được, ta cộng thêm \(\sigma^2\). Độ chệch cao nghĩa là mô hình quá cứng, không đủ sức biểu diễn. Phương sai cao nghĩa là mô hình quá nhạy với mẫu huấn luyện. Điều chuẩn và chọn độ phức tạp mô hình thực chất là điều khiển sự cân bằng này.
+
+\section{Hồi quy ridge: điều chuẩn như một tiên nghiệm Gaussian}
+
+Hồi quy \emph{ridge} giải bài toán
+\[
+\min_{\bm{w}} \|X\bm{w}-\bm{y}\|_2^2 + \lambda \|\bm{w}\|_2^2.
+\]
+Lấy gradient và cho bằng 0:
+\[
+2X^\top(X\bm{w}-\bm{y})+2\lambda \bm{w}=0,
+\]
+nên
+\[
+(X^\top X+\lambda I)\bm{w}=X^\top \bm{y}.
+\]
+Vì \(X^\top X+\lambda I\) dương xác định khi \(\lambda>0\), \emph{ridge} có nghiệm duy nhất
+\[
+\hat{\bm{w}}_{\mathrm{ridge}}=(X^\top X+\lambda I)^{-1}X^\top \bm{y}.
+\]
+
+\begin{proposition}
+Hồi quy \emph{ridge} tương đương với ước lượng cực đại hậu nghiệm trong mô hình nhiễu Gaussian và tiên nghiệm Gaussian
+\[
+\bm{w}\sim \mathcal{N}(\bm{0}, \tau^2 I).
+\]
+\end{proposition}
+
+\begin{proof}
+Log hậu nghiệm, bỏ qua hằng số, bằng
+\[
+-\frac{1}{2\sigma^2}\|X\bm{w}-\bm{y}\|_2^2 - \frac{1}{2\tau^2}\|\bm{w}\|_2^2.
+\]
+Tối đa hóa hậu nghiệm tương đương với tối thiểu hóa
+\[
+\|X\bm{w}-\bm{y}\|_2^2 + \frac{\sigma^2}{\tau^2}\|\bm{w}\|_2^2.
+\]
+Đặt \(\lambda=\sigma^2/\tau^2\), ta thu được \emph{ridge}.
+\end{proof}
+
+Ý nghĩa này rất đẹp: điều chuẩn không chỉ là ``mẹo tránh quá khớp'', mà là cách mã hóa tri thức tiên nghiệm rằng hệ số lớn là ít đáng tin.
+
+\section{Lasso và tính thưa}
+
+\emph{Lasso} giải bài toán
+\[
+\min_{\bm{w}} \frac{1}{2}\|X\bm{w}-\bm{y}\|_2^2 + \lambda \|\bm{w}\|_1.
+\]
+Khác với \emph{ridge}, chuẩn $L^1$ không khả vi tại 0. Chính sự không trơn này làm xuất hiện tính \emph{sparsity} (thưa): nhiều hệ số có thể bằng 0 đúng nghĩa. Về hình học, các đường đồng mức của \(\|\bm{w}\|_1\) có góc nhọn, nên điểm tiếp xúc với đường đồng mức của hàm mất mát dễ rơi vào trục tọa độ.
+
+\emph{Lasso} quan trọng không chỉ vì giảm số chiều, mà còn vì dạy một bài học tổng quát: hình học của bộ điều chuẩn ảnh hưởng trực tiếp đến cấu trúc nghiệm. Trong hệ mờ, nếu ta điều chuẩn số lượng luật hay mức chồng lấp của hàm thuộc, ta cũng đang can thiệp vào hình học của bài toán học một cách tương tự.
+
+\section{Hồi quy logistic và cực đại hóa hàm khả năng phân loại}
+
+Cho bài toán phân loại nhị phân \(y_i\in\{0,1\}\), hồi quy logistic đặt
+\[
+\Prob(y=1|\bm{x}) = \sigma(\bm{w}^\top \bm{x}+b),\qquad \sigma(z)=\frac{1}{1+e^{-z}}.
+\]
+Hàm khả năng là
+\[
+\prod_{i=1}^n \sigma(z_i)^{y_i}(1-\sigma(z_i))^{1-y_i}.
+\]
+Lấy log, ta được
+\[
+\ell(\bm{w},b)=\sum_{i=1}^n \left(y_i z_i - \log(1+e^{z_i})\right),
+\qquad z_i=\bm{w}^\top\bm{x}_i+b.
+\]
+Hàm mất mát là âm log-likelihood, chính là \emph{binary cross-entropy} (entropy chéo nhị phân). Gradient theo \(\bm{w}\):
+\[
+\nabla_{\bm{w}}(-\ell)=\sum_{i=1}^n (\sigma(z_i)-y_i)\bm{x}_i
+=X^\top(\hat{\bm{p}}-\bm{y}).
+\]
+
+\begin{proposition}
+Âm log-likelihood của hồi quy logistic là một hàm lồi theo \((\bm{w},b)\).
+\end{proposition}
+
+\begin{proof}
+Hàm \(\phi(z)=\log(1+e^z)\) có đạo hàm cấp hai
+\[
+\phi''(z)=\sigma(z)(1-\sigma(z))\ge 0,
+\]
+nên \(\phi\) lồi. Vì
+\[
+-(yz-\log(1+e^z))=\phi(z)-yz
+\]
+là tổng của một hàm lồi và một hàm affine, nó lồi theo \(z\). Do \(z\) là hàm affine của \((\bm{w},b)\), âm log-likelihood là lồi theo \((\bm{w},b)\).
+\end{proof}
+
+Kết quả này cho ta một mô hình phân loại có bài toán học dễ chịu. Khác với \emph{perceptron} có thể có vô số nghiệm hoặc không có nếu dữ liệu không tách được, hồi quy logistic vẫn hoạt động như một mô hình xác suất mềm.
+
+\section{Mô hình hóa xác suất và hàm mất mát}
+
+Có một bài học lớn ở đây: hàm mất mát không nên chọn theo thói quen, mà theo giả thiết về dữ liệu.
+
+Nếu ta cho rằng nhiễu có điều kiện là Gaussian, MSE là hợp lý. Nếu dữ liệu là biến đếm hiếm, \emph{Poisson loss} (mất mát Poisson) có thể hợp lý hơn. Nếu bài toán là phân loại nhiều lớp, entropy chéo là tự nhiên khi đầu ra là phân phối \emph{categorical} (phân phối hạng mục). Trong dự báo tài chính, dự báo trung bình có điều kiện không phải lúc nào cũng đủ; ta có thể quan tâm đến phân vị, tổn thất kỳ vọng ở đuôi, hay toàn bộ phân phối.
+
+\section{Mô hình, tập thẩm định, tập kiểm tra và giao thức chọn siêu tham số}
+
+Một hệ thống học máy nghiêm túc cần phân biệt rõ ba vai trò:
+
+\begin{enumerate}
+\item \textbf{Train} (tập huấn luyện): học tham số của mô hình.
+\item \textbf{Validation} (tập thẩm định): chọn siêu tham số, \emph{early stopping} (dừng sớm), và \emph{model selection} (chọn mô hình).
+\item \textbf{Test} (tập kiểm tra): đánh giá cuối cùng, chỉ dùng một cách tiết kiệm.
+\end{enumerate}
+
+Nếu ta dùng tập kiểm tra để chọn số \emph{epoch}, chọn \emph{seed}, chọn kiểu mô hình, hay chọn ngưỡng, ta đã dùng \emph{test} như \emph{validation}. Khi đó, \emph{test} không còn là \emph{test} nữa. Lỗi này rất phổ biến vì code vẫn ``chạy'' và kết quả vẫn đẹp. Nhưng về mặt thống kê, nó làm sai lệch ước lượng hiệu năng tổng quát hóa.
+
+Trong dữ liệu chuỗi thời gian, tác hại còn nặng hơn. Tập thẩm định phải nằm sau tập huấn luyện theo thời gian, và tập kiểm tra phải nằm sau tập thẩm định. Bất kỳ biến đổi nào được fit trên toàn bộ dữ liệu trước khi tách một cách hợp lệ đều có thể gây \emph{leakage}. Điều này bao gồm chuẩn hóa, PCA, chọn đặc trưng, và thậm chí cả phân cụm để khởi tạo hàm thuộc.
+
+\section{Kiểm định chéo và giới hạn của nó trong chuỗi thời gian}
+
+Với dữ liệu i.i.d., \emph{k-fold cross-validation} (kiểm định chéo k phần) là công cụ mạnh. Dữ liệu được chia thành \(k\) phần, lần lượt giữ một phần để kiểm tra và huấn luyện trên phần còn lại. Nhưng trong chuỗi thời gian, xáo trộn phá vỡ thứ tự thông tin. Vì vậy ta cần các biến thể như \emph{rolling-origin evaluation} (đánh giá theo gốc cuộn) hay \emph{expanding window} (cửa sổ mở rộng) \citep{hyndman2021fpp3}.
+
+Nguyên lý cơ bản là: mọi dự báo tại thời điểm \(t\) chỉ được sử dụng thông tin có sẵn trước hoặc tại \(t\). Nếu phương pháp thẩm định không tôn trọng nguyên lý này, kết quả sẽ lạc quan.
+
+\section{Chỉ số nào cho bài toán nào}
+
+Không có một \emph{metric} duy nhất tối ưu cho mọi tình huống. \emph{RMSE} phạt nặng lỗi lớn. \emph{MAE} ổn định hơn trước ngoại lệ. \emph{MAPE} dễ diễn giải theo tỷ lệ nhưng vô nghĩa khi mẫu số nhỏ. $R^2$ đo mức cải thiện so với dự báo bằng trung bình, nhưng trong chuỗi có xu hướng nó có thể ``đẹp'' một cách dễ dàng. \emph{Directional accuracy} nghe đúng tinh chất giao dịch, nhưng nó phụ thuộc mạnh vào cách định nghĩa hướng và có thể bỏ qua quy mô lỗi.
+
+Mục tiêu của ta là phải nói rõ \emph{metric} đang đo điều gì. Trong dự báo giá, nếu quyết định giao dịch phụ thuộc vào hướng tăng/giảm và rủi ro cực trị, chỉ số được chọn cần phản ánh được điều đó. Nếu ta dự báo 4 biến OHLC cùng lúc, chỉ số cho từng biến riêng lẻ có thể bỏ qua cấu trúc hợp lý giữa chúng.
+
+\section{Nguồn gốc của rò rỉ thông tin}
+
+Rò rỉ thông tin không chỉ là việc vô tình chèn cột ``future return'' (tỷ suất tương lai) vào đặc trưng. Nhiều dạng rò rỉ tinh vi hơn:
+
+\begin{enumerate}
+\item fit bộ chuẩn hóa trên cả tập huấn luyện lẫn tập kiểm tra;
+\item fit PCA trên cả bộ dữ liệu;
+\item chọn \emph{seed} tốt nhất dựa trên tập kiểm tra;
+\item dùng tập kiểm tra cho \emph{early stopping};
+\item tính đặc trưng ở thời điểm \(t\) bằng cách dùng thông tin xuất hiện sau \(t\);
+\item làm sạch dữ liệu dựa trên thống kê của cả tập dữ liệu.
+\end{enumerate}
+
+Ta cần coi \emph{leakage} như một lỗi logic, không chỉ là lỗi kỹ thuật. Nó làm thói quen lập luận về tổng quát hóa bị hư hỏng. Trong Chương~11, chúng ta sẽ gặp đồng thời nhiều dạng rò rỉ trong cùng một script, và thấy rõ vì sao con số đẹp trở thành không đáng tin.
+
+\section{Những gì cần giữ lại trước khi sang các mô hình phi tuyến}
+
+Đến đây, có ba thông điệp cần nắm chắc.
+
+Thứ nhất, học máy thống kê là nghệ thuật xây dựng và kiểm soát bài toán tối ưu từ dữ liệu hữu hạn.
+
+Thứ hai, điều chuẩn là trung tâm của tổng quát hóa, và có thể được hiểu vừa về mặt tối ưu vừa về mặt Bayes.
+
+Thứ ba, giao thức đánh giá là một phần của mô hình. Nếu giao thức sai, kết quả đẹp cũng vô nghĩa.
+
+Với ba thông điệp đó, ta đã sẵn sàng nhìn các mô hình phi tuyến cổ điển nhưng vẫn giữ được kỷ luật thống kê.

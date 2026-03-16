@@ -1,0 +1,141 @@
+\chapter{Các mô hình cổ điển phi tuyến: cây, hạt nhân, tổ hợp và phân cụm}
+
+\section{Vì sao vẫn phải học các mô hình ``cổ điển''}
+
+Người mới thường nóng lòng đi ngay vào học sâu và xem những mô hình cổ điển là câu chuyện lịch sử. Đây là một sai lầm lớn. Trước khi học một mô hình rất sâu, ta cần biết các cách tạo phi tuyến khác đã tồn tại như thế nào, mạnh ở đâu, và dạy ta điều gì về bài toán. Các mô hình cổ điển thường dễ chẩn đoán dữ liệu hơn, dễ \emph{debug} hơn, và trong nhiều bài toán có kích thước vừa phải, hiệu năng của chúng rất cạnh tranh.
+
+Chủ đề của chương này là: phi tuyến không đồng nghĩa với sâu. Ta có nhiều cách tạo phi tuyến mà không cần mạng nơ-ron sâu. Những cách này còn giúp ta hiểu tốt hơn lý do học sâu thành công.
+
+\section{\emph{k}-NN: phi tham số theo nghĩa địa phương}
+
+Với \emph{k-nearest neighbors} (\emph{k}-láng giềng gần nhất), dự báo tại điểm mới \(\bm{x}\) được xây dựng từ \(k\) điểm huấn luyện gần nhất theo một \emph{metric} (thước đo khoảng cách), thường là khoảng cách Euclid. Trong hồi quy, ta lấy trung bình nhãn của các láng giềng. Trong phân loại, ta lấy đa số phiếu.
+
+\[
+\hat{f}(\bm{x}) = \frac{1}{k}\sum_{i\in \mathcal{N}_k(\bm{x})} y_i.
+\]
+
+\emph{k}-NN đẹp vì nó cực kỳ đơn giản và gần như không ``học'' tham số toàn cục. Nhưng chính vì thế, nó gặp lời nguyền số chiều: khi số chiều tăng, khái niệm ``gần'' trở nên kém ý nghĩa. Bài học ở đây là: có được một \emph{metric} tốt là có được nửa mô hình.
+
+\section{Cây quyết định: phân hoạch không gian bằng luật nếu--thì}
+
+Cây quyết định phân hoạch không gian đầu vào bằng các ngưỡng trên từng đặc trưng. Mỗi nút nội bộ chọn một đặc trưng \(j\) và một ngưỡng \(s\), rồi tách dữ liệu thành hai tập:
+\[
+\{x_j \le s\},\qquad \{x_j > s\}.
+\]
+Trong hồi quy, mỗi lá thường chứa trung bình nhãn của các mẫu rơi vào lá đó. Trong phân loại, mỗi lá chứa một phân phối lớp kinh nghiệm.
+
+Ưu điểm của cây là dễ đọc và có thể biểu diễn tương tác phi tuyến mà không cần biến đổi đặc trưng thủ công. Nhược điểm là dễ quá khớp và không ổn định: thay đổi nhỏ trong dữ liệu có thể dẫn đến cây khác. Ta đang mua tính dễ đọc và tính phi tuyến bằng cái giá của sự không ổn định.
+
+\subsection{Tiêu chuẩn tách}
+
+Trong phân loại, người ta dùng \emph{entropy} hoặc \emph{Gini impurity} (độ hỗn tạp Gini). Ví dụ, nếu nút có tỉ lệ lớp \(p_1,\dots,p_K\), entropy là
+\[
+H = -\sum_{k=1}^K p_k \log p_k.
+\]
+Tách tốt là tách làm giảm độ hỗn tạp nhiều nhất. Trong hồi quy, ta dùng tổng bình phương sai số trong hai nút con. Cách chọn này cho thấy cây vẫn nằm trong logic tối thiểu hóa rủi ro thực nghiệm, chỉ là cách tham số hóa khác.
+
+\section{\emph{Bagging} và rừng ngẫu nhiên}
+
+\emph{Random forest} (rừng ngẫu nhiên) là một bài học đẹp về phương sai. Một cây đơn lẻ có độ chệch thấp nhưng phương sai cao. Nếu ta huấn luyện nhiều cây trên các \emph{bootstrap samples} (mẫu rút lại có hoàn lại) và trung bình kết quả, phương sai sẽ giảm. Rừng ngẫu nhiên đi xa hơn \emph{bagging} bằng cách chỉ cho phép mỗi nút xem một tập con ngẫu nhiên của đặc trưng, qua đó giảm tương quan giữa các cây.
+
+Nếu \(T_1,\dots,T_M\) là các ước lượng có cùng phương sai \(\sigma^2\) và tương quan trung bình \(\rho\), thì phương sai của trung bình xấp xỉ
+\[
+\Var\left(\frac{1}{M}\sum_{m=1}^M T_m\right)
+\approx
+\rho\sigma^2 + \frac{1-\rho}{M}\sigma^2.
+\]
+Công thức này nhắc ta rằng không chỉ cần nhiều mô hình, mà cần nhiều mô hình đủ khác nhau.
+
+\section{\emph{Boosting}: học lặp để sửa sai}
+
+Khác với \emph{bagging}, \emph{boosting} không độc lập giữa các \emph{base learner} (mô hình cơ sở). Nó thêm mô hình mới để sửa lỗi của mô hình cũ. Trong \emph{gradient boosting} cho hồi quy, ta xây dựng mô hình cộng
+\[
+F_M(\bm{x})=\sum_{m=1}^M \nu h_m(\bm{x}),
+\]
+trong đó \(h_m\) xấp xỉ gradient âm của hàm mất mát tại bước \(m-1\). Ý tưởng này cực kỳ tổng quát: \emph{boosting} có thể được xem như hạ dốc theo gradient trong không gian hàm.
+
+Điều đẹp ở đây là ta thấy một lần nữa tính thống nhất của học máy. ``Thêm một cây nữa'' hóa ra là một bước theo gradient, nhưng gradient này sống trong không gian hàm thay vì không gian Euclid thông thường.
+
+\section{Máy vectơ hỗ trợ và biên}
+
+Cho bài toán phân loại nhị phân tách tuyến tính, \emph{SVM} (máy vectơ hỗ trợ) tìm siêu phẳng
+\[
+\bm{w}^\top \bm{x} + b = 0
+\]
+có \emph{margin} (biên) lớn nhất. Bài toán \emph{hard-margin} là
+\[
+\min_{\bm{w},b}\frac{1}{2}\|\bm{w}\|_2^2
+\quad\text{s.t.}\quad
+y_i(\bm{w}^\top \bm{x}_i+b)\ge 1,\ \forall i.
+\]
+Biên hình học bằng \(2/\|\bm{w}\|_2\). Do đó tối thiểu hóa chuẩn của \(\bm{w}\) là tối đa hóa biên.
+
+Khi dữ liệu không tách được, ta thêm \emph{slack variables} (biến trễ) và \emph{hinge loss}:
+\[
+\min_{\bm{w},b}\frac{1}{2}\|\bm{w}\|_2^2 + C\sum_{i=1}^n \max(0,1-y_i(\bm{w}^\top \bm{x}_i+b)).
+\]
+\emph{SVM} dạy một bài học lớn: điều chuẩn và hàm mất mát không tách rời, mà được thiết kế cùng nhau để phản ánh hình học của bài toán.
+
+\section{Mẹo hạt nhân: phi tuyến nhưng vẫn lồi}
+
+Nếu dữ liệu không tách được trong không gian gốc, ta có thể ánh xạ nó vào một không gian đặc trưng cao chiều \(\phi(\bm{x})\) rồi xây bộ phân loại tuyến tính ở đó. \emph{Kernel trick} (mẹo hạt nhân) cho phép tính tích vô hướng
+\[
+K(\bm{x},\bm{x}')=\langle \phi(\bm{x}),\phi(\bm{x}')\rangle
+\]
+mà không cần biết rõ \(\phi\). Những hàm hạt nhân phổ biến gồm đa thức, Gaussian RBF, và sigmoid.
+
+Về mặt khái niệm, phương pháp hạt nhân là một cách ``ẩn'' việc mở rộng đặc trưng trong hình học của tích vô hướng. Học sâu, trái lại, học \(\phi\) từ dữ liệu. Sự khác biệt này sẽ giúp ta hiểu vì sao học sâu được xem là học biểu diễn, còn phương pháp hạt nhân là biểu diễn được chỉ định gián tiếp qua hạt nhân.
+
+\section{Không gian Hilbert tái sinh và định lý biểu diễn}
+
+Một trong những kết quả đẹp nhất của phương pháp hạt nhân là \emph{representer theorem} (định lý biểu diễn): nghiệm tối ưu của một bài toán rủi ro thực nghiệm có điều chuẩn trong \emph{RKHS} (không gian Hilbert tái sinh) nằm trong bao tuyến tính của các hàm hạt nhân đặt tại điểm dữ liệu:
+\[
+f^\star(\cdot)=\sum_{i=1}^n \alpha_i K(\bm{x}_i,\cdot).
+\]
+Kết quả này biến bài toán tối ưu vô hạn chiều thành bài toán hữu hạn chiều theo số mẫu. Bài học sâu xa là: cấu trúc toán học đúng có thể biến bài toán tưởng như không thể giải thành bài toán khả thi.
+
+\section{Phân cụm và K-Means}
+
+\emph{Clustering} (phân cụm) là phần lớn của học không giám sát. Trong các phương pháp phân cụm, \emph{K-Means} đơn giản nhưng có ảnh hưởng cực lớn. Bài toán là chia dữ liệu thành \(K\) cụm và tìm tâm cụm \(\bm{\mu}_1,\dots,\bm{\mu}_K\) để tối thiểu hóa tổng bình phương khoảng cách trong cụm:
+\[
+\min_{\{\bm{\mu}_k\},\{c_i\}} \sum_{i=1}^n \|\bm{x}_i-\bm{\mu}_{c_i}\|_2^2.
+\]
+Thuật toán Lloyd lặp giữa hai bước:
+
+\begin{enumerate}
+\item gán mỗi điểm vào tâm gần nhất;
+\item cập nhật mỗi tâm bằng trung bình các điểm trong cụm.
+\end{enumerate}
+
+Đây là thuật toán giảm xen kẽ, bảo đảm làm giảm mục tiêu qua mỗi bước, nhưng không bảo đảm tối ưu toàn cục. Khởi tạo quan trọng. Trong script mà ta phân tích sau này, \emph{K-Means} được dùng để khởi tạo tâm của các hàm thuộc cho ANFIS. Điều đó có lý, nhưng cũng đặt câu hỏi: phân cụm đang được fit trên phần dữ liệu nào? Và ý nghĩa ``LOW/HIGH'' có còn đúng sau khi huấn luyện hay không?
+
+\section{Hỗn hợp Gaussian và EM}
+
+\emph{K-Means} có thể xem là một giới hạn của \emph{Gaussian mixture model} (mô hình hỗn hợp Gaussian) khi hiệp phương sai là dạng cầu, bằng nhau, và phân công cụm trở nên cứng. GMM mô tả dữ liệu bằng tổng có trọng số của các Gaussian:
+\[
+p(\bm{x})=\sum_{k=1}^K \pi_k \mathcal{N}(\bm{x}\mid \bm{\mu}_k,\Sigma_k).
+\]
+Thuật toán \emph{EM} (kỳ vọng -- cực đại) lặp giữa:
+
+\begin{enumerate}
+\item \textbf{E-step}: tính \emph{responsibilities} (trách nhiệm mềm) \(r_{ik}\);
+\item \textbf{M-step}: tối đa hóa kỳ vọng log-likelihood đầy đủ.
+\end{enumerate}
+
+\emph{EM} cho ta một nguyên lý bao quát: khi có biến ẩn, ta có thể lặp giữa suy diễn trên biến ẩn và cập nhật tham số. Tư duy này có điểm đồng với học lai của ANFIS, nơi một phần tham số có thể học điều kiện theo phần khác.
+
+\section{PCA và giảm chiều trong quy trình học máy}
+
+\emph{PCA} không chỉ là một bài tập đại số. Trong quy trình học máy, PCA giúp giảm nhiễu, nén thông tin, và trích xuất hướng biến động chính. Nhưng PCA là một biến đổi học từ dữ liệu. Nếu fit PCA trên toàn bộ dữ liệu rồi mới tách huấn luyện/kiểm tra, ta đã gây rò rỉ thông tin. Bài học này giống hệt với chuẩn hóa và phân cụm.
+
+Dưới góc nhìn ANFIS, hàm thuộc cũng là một dạng biểu diễn. Khởi tạo và học hàm thuộc có thể xem như một dạng giảm chiều phi tuyến cục bộ ở từng đặc trưng. Nếu không tôn trọng kỷ luật huấn luyện/thẩm định/kiểm tra cho các bước này, ta không còn đánh giá mô hình một cách sạch sẽ.
+
+\section{Mô hình cổ điển dạy ta điều gì về diễn giải}
+
+Cây quyết định dễ đọc nhất ở cấp quy tắc, nhưng không ổn định. Rừng ngẫu nhiên ổn định hơn nhưng khó đọc hơn vì là tập hợp nhiều cây. SVM hạt nhân có thể đạt biên quyết định rất đẹp nhưng khó giải thích với người dùng cuối. \emph{K-Means} cho tâm cụm để nhìn, nhưng nhãn cụm có thể thay đổi theo khởi tạo. Bài học ở đây là: diễn giải luôn có giá của nó.
+
+ANFIS được ưa chuộng một phần vì hứa hẹn đạt được một điểm cân bằng đẹp: luật đọc được, tham số học được. Nhưng ta cần giữ tinh thần cảnh giác từ các mô hình cổ điển: chỉ cần thêm một lớp kết hợp phức tạp ở cuối, tính diễn giải có thể mất rất nhanh.
+
+\section{Nội dung của chương này sẽ trở lại ở đâu}
+
+Khi sang học sâu, ta sẽ gặp lại hạ dốc theo gradient, điều chuẩn, và xấp xỉ hàm, nhưng trên lớp hàm phong phú hơn. Khi sang logic mờ, ta sẽ gặp lại luật nếu--thì, nhưng được làm mềm bằng hàm thuộc. Khi sang ANFIS, ta sẽ gặp lại phân cụm, bình phương tối thiểu, và gradient trong cùng một cấu trúc. Các mô hình ``cổ điển'' vì vậy không hề bị bỏ lại; chúng sẽ trở thành các mảnh ghép trong một bức tranh lớn hơn.

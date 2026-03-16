@@ -1,0 +1,132 @@
+\chapter{Tổng kết, định hướng tự học và bài tập}
+
+\section{Sau khi đi hết giáo trình này, điều gì thật sự cần ở lại trong đầu người học}
+
+Nếu chỉ nhớ lại tên các mô hình đã đi qua, người học mới chỉ mang được phần vỏ của giáo trình. Điều đáng giữ lại sâu hơn là một \emph{chuẩn mực nội tại} khi nhìn vào dữ liệu, mô hình và kết quả. Chuẩn mực đó có thể tóm vào ba trục mà ta đã đi qua từ đầu đến cuối cuốn sách.
+
+Trục thứ nhất là trục \emph{thống kê và suy luận ngoài mẫu}. Từ hồi quy tuyến tính, điều chuẩn, xác suất có điều kiện, cho đến validation, test, leakage và backtesting, bài học xuyên suốt là: mô hình không thể được đánh giá tách rời khỏi giao thức sinh ra chỉ số. Một bảng \(R^2\) cao không tự nói lên điều gì nếu ta không biết cách dữ liệu được chia, cách siêu tham số được chọn, và test có bị lạm dụng hay không. Người học trưởng thành phải có phản xạ xem phương pháp trước khi xem thành tích.
+
+Trục thứ hai là trục \emph{biểu diễn và tối ưu}. Từ các mô hình tuyến tính, cây, hạt nhân, mạng nơ-ron, đến LSTM và BiLSTM, ta đã thấy rằng mọi mô hình học máy đều là một cách xấp xỉ hàm với một thiên kiến quy nạp riêng. Không có kiến trúc nào thần kỳ ngoài ngữ cảnh. Kiến trúc càng phức tạp thì năng lực biểu diễn càng mạnh, nhưng cùng lúc số cách thất bại cũng nhiều hơn: tối ưu khó hơn, quá khớp dễ hơn, diễn giải mờ hơn. Bài học lớn ở đây là không được nhầm năng lực biểu diễn với giá trị khoa học.
+
+Trục thứ ba là trục \emph{logic mờ và ngôn ngữ khái niệm}. Tập mờ, hàm thuộc, T-norm, hệ Sugeno, ANFIS cho ta một cách mô hình hóa những khái niệm mà con người dùng hằng ngày nhưng logic hai giá trị mô tả quá thô. Tuy nhiên, chương về ANFIS và chương phân tích code cũng chỉ ra rằng tính diễn giải không tự sinh ra chỉ vì mô hình có luật. Muốn giữ được diễn giải, ta phải giữ được nghĩa của nhãn mờ, số lượng luật ở mức đọc được, và phạm vi phát biểu trung thực về phần nào của mô hình thật sự được luật chi phối.
+
+Ba trục đó giao nhau ở một năng lực quan trọng hơn mọi tên gọi mô hình: năng lực đọc một hệ thống dự báo như một công trình khoa học. Khi cầm một script, một bài báo, hay một notebook, ta không chỉ hỏi ``nó có hiện đại không'' mà phải hỏi ``nó đúng bài toán không, đúng giao thức không, đúng ngôn ngữ khái niệm không''. Nếu sau giáo trình này người học hình thành được thói quen ấy, thì phần lớn mục tiêu của sách đã đạt.
+
+\section{Tự học tiếp như thế nào để không sa vào việc chỉ sưu tập tên mô hình}
+
+Một nguy cơ rất phổ biến sau khi học một lượng lớn kiến thức ML/DL là người học bước sang giai đoạn ``sưu tập kiến trúc''. Cứ mỗi tuần họ biết thêm một tên mới, một sơ đồ mới, một bài báo mới, nhưng năng lực đặt bài toán và kiểm tra giao thức thì không tăng tương xứng. Cách tự học như vậy thường tạo cảm giác tiến bộ nhanh nhưng nền móng rất rỗng.
+
+Muốn tránh điều đó, thứ tự tự học nên đi từ \emph{chuẩn mực khoa học} sang \emph{kiến trúc}, chứ không phải ngược lại. Nghĩa là, trước mỗi kiến trúc mới, ta tự hỏi năm câu. Bài toán đầu vào--đầu ra là gì. Tín hiệu nào có thể biết tại thời điểm dự báo. Mất mát nào phản ánh đúng mục tiêu ra quyết định. Giao thức tách dữ liệu nào phù hợp. Và cuối cùng, kiến trúc mới này thêm thiên kiến quy nạp gì so với các mô hình mình đã biết. Nếu không đi qua năm câu này, việc học thêm mô hình mới chỉ làm bộ sưu tập thuật ngữ của ta dày lên.
+
+Về lộ trình đọc sâu hơn, một cách bền vững là chia theo ba tuyến song song. Tuyến thứ nhất là tuyến nền tảng toán học và thống kê: đọc lại xác suất có điều kiện, suy luận Bayes, tối ưu lồi, bất đẳng thức, và các lập luận về tổng quát hóa. Đây là tuyến giúp người học không bị ngợp trước ký hiệu trong các tài liệu khó hơn. Tuyến thứ hai là tuyến mô hình: mỗi giai đoạn chỉ chọn một họ mô hình để đào sâu, ví dụ một tháng cho mô hình tuyến tính và điều chuẩn, một tháng cho mạng hồi tiếp, một tháng cho mô hình mờ. Tuyến thứ ba là tuyến thực nghiệm: luôn gắn việc đọc với một codebase thật, vì chỉ khi đọc code thật người học mới thấy lý thuyết nào thật sự kiểm soát được sai sót.
+
+Trong danh mục tài liệu, các cuốn của Bishop, Hastie--Tibshirani--Friedman, Murphy, Goodfellow và Hyndman là các mốc rất tốt, nhưng cách đọc quan trọng hơn tên sách. Không nên đọc với mục tiêu ``đi cho hết''. Nên đọc với mục tiêu ``mỗi chương phải để lại cho mình một tiêu chuẩn kiểm tra mô hình''. Chẳng hạn, sau chương về \emph{ridge}, ta phải có khả năng tự chứng minh vì sao ma trận \(X^\top X+\lambda I\) khả nghịch khi \(\lambda>0\). Sau chương về validation, ta phải nhìn một script và nhận ra ngay chỗ nào test đang bị dùng sai. Sau chương về ANFIS, ta phải hiểu vì sao nhãn LOW/HIGH không thể mặc định giữ nguyên nghĩa sau khi tham số được học tự do.
+
+Một nguyên tắc tự học nữa là luôn xen kẽ \emph{đọc tiến} với \emph{đọc lùi}. Đọc tiến là học thêm một ý tưởng mới. Đọc lùi là quay lại một code cũ, một mô hình cũ, hoặc một bài báo cũ rồi xem mình đọc nó sâu hơn được bao nhiêu sau khi đã có kiến thức mới. Người học đi nhanh nhưng chắc là người có thể đọc lùi tốt. Chính chương phân tích \texttt{run\_feature\_group\_anfis.py} là một ví dụ của đọc lùi: ta dùng toàn bộ lý thuyết trước đó để soi lại một hệ thống cụ thể.
+
+\section{Nếu viết lại mô hình trong repo như một nghiên cứu nghiêm túc, ta phải bắt đầu từ đâu}
+
+Phần này có giá trị đặc biệt vì nó biến toàn bộ giáo trình từ ``kiến thức để biết'' thành ``kiến thức để làm''. Giả sử mục tiêu của ta không chỉ là sửa một script cho chạy được, mà là nâng nó thành một thí nghiệm có giá trị khoa học hơn. Câu hỏi đầu tiên không phải là ``thêm lớp gì'', mà là ``định nghĩa lại bài toán ra sao cho sáng sủa và kiểm chứng được''.
+
+Trước hết, ta phải chốt rõ bài toán dự báo. Có ít nhất ba lựa chọn khác nhau và không nên trộn lẫn chúng: dự báo trực tiếp mức giá OHLC của ngày mai; dự báo các tỷ suất thay đổi của OHLC theo một mốc chuẩn cố định; hoặc dự báo một bộ tham số cấu trúc của nến giá, chẳng hạn giá đóng cửa tương lai cộng với biên độ trên/dưới tương đối. Mỗi cách đặt bài toán kéo theo một hình học đầu ra, một hàm mất mát, và một câu chuyện diễn giải khác nhau. Nếu chưa chốt điều này mà đã bàn kiến trúc, thì kiến trúc mới chỉ là trang trí trên một bài toán mơ hồ.
+
+Sau khi chốt bài toán, bước thứ hai là thiết kế \emph{giao thức thời gian}. Dữ liệu chuỗi không thể bị cắt như dữ liệu độc lập cùng phân phối. Ta cần ít nhất ba đoạn theo thứ tự thời gian: train, validation, test. Trong một bài toán tài chính, nhiều nhóm còn dùng \emph{walk-forward validation} hay \emph{rolling origin evaluation} để phản ánh sự thay đổi chế độ. Điều cốt lõi là mọi thống kê học được trong pipeline, từ chuẩn hóa đến chọn siêu tham số, đều phải được xây từ vùng thời gian thích hợp và không được hút thông tin từ tương lai.
+
+Bước thứ ba là thiết kế lại pipeline theo đúng nghĩa ``học từ train''. Nếu ta chuẩn hóa, bộ chuẩn hóa phải được \emph{fit} trên train rồi \emph{transform} sang validation và test. Nếu ta khởi tạo tâm hàm thuộc bằng K-Means, K-Means cũng phải nhìn dữ liệu train sau chuẩn hóa train mà thôi. Nếu ta chọn số luật, số units hay seed, quyết định đó phải dựa trên validation. Test chỉ được phép xuất hiện như một nghi lễ cuối cùng, một lần, sau khi mọi quyết định đã khóa.
+
+Bước thứ tư là sửa mô hình để tôn trọng cấu trúc đầu ra. Với dữ liệu OHLC, đây không phải một chi tiết đẹp đẽ tùy chọn. Đầu ra không hợp lệ về hình học có thể khiến cả một dự báo ``đẹp chỉ số'' trở nên khó dùng. Một cách sửa là thêm số hạng phạt
+\[
+\mathcal{L}_{\mathrm{ohlc}}
+=
+\lambda_1 \,\mathrm{ReLU}\!\bigl(\max(\widehat O,\widehat C)-\widehat H\bigr)
+\;+\;
+\lambda_2 \,\mathrm{ReLU}\!\bigl(\widehat L-\min(\widehat O,\widehat C)\bigr),
+\]
+vào hàm mất mát tổng. Một cách mạnh hơn là chọn tham số hóa đầu ra sao cho bất đẳng thức hợp lệ được thỏa ngay theo định nghĩa.
+
+Bước thứ năm là làm rõ mục tiêu diễn giải. Nếu vẫn muốn dùng nhánh mờ như một phần ``đọc được'' của mô hình, ta cần quyết định mình muốn giải thích cái gì. Muốn giải thích biểu diễn cục bộ ở bước cuối, hay muốn giải thích dự báo cuối. Hai mục tiêu ấy khác nhau. Nếu chỉ giải thích biểu diễn cục bộ, ta nên nói thẳng điều đó và không gán cho toàn bộ hệ thống danh hiệu ``fully explainable''. Nếu muốn tiến gần hơn tới giải thích đầu ra cuối, ta phải hoặc làm vai trò của nhánh mờ chi phối hơn, hoặc thiết kế cơ chế trộn sao cho đóng góp của từng nhánh còn truy vết được.
+
+Bước thứ sáu là nâng tiêu chuẩn báo cáo. Một báo cáo tốt không chỉ nêu chỉ số cuối cùng mà phải trả lời các câu hỏi: kết quả ổn định đến đâu theo seed; có vi phạm OHLC hợp lệ không; nhánh mờ đóng góp gì so với mô hình không có nhánh mờ; nếu bỏ BiLSTM thì mất gì; nếu bỏ K-Means khởi tạo thì có thay đổi lớn không. Đây chính là tinh thần của \emph{ablation study} (nghiên cứu triệt giảm thành phần): thay vì chỉ khoe mô hình đầy đủ, ta phải chứng minh từng mảnh của mô hình có giá trị gì.
+
+\section{Bài tập tự luyện: từ toán nền đến đọc code thật}
+
+Phần bài tập dưới đây không được thiết kế như một danh sách để đủ mục. Mỗi bài nhắm vào một kỹ năng mà người học cần thật sự có sau giáo trình: kỹ năng chứng minh, kỹ năng diễn giải mô hình, kỹ năng thiết kế giao thức, và kỹ năng đọc code với kỷ luật khoa học.
+
+\textbf{Nhóm 1: bài tập nền tảng toán học và thống kê.} Đây là nhóm giúp người học không chỉ nhớ kết luận, mà còn nắm được cấu trúc lập luận phía sau kết luận.
+
+\begin{exercise}
+Chứng minh rằng trong hồi quy \emph{ridge}, ma trận \(X^\top X+\lambda I\) luôn khả nghịch với mọi \(\lambda>0\), ngay cả khi \(X^\top X\) suy biến. Sau đó giải thích bằng ngôn ngữ hình học vì sao điều này có nghĩa là bài toán tối ưu trở nên ``được khóa chặt'' hơn so với bình phương tối thiểu thuần túy.
+\end{exercise}
+
+\begin{exercise}
+Chứng minh rằng hàm dự báo tối ưu theo mất mát MSE là kỳ vọng có điều kiện, còn theo mất mát MAE là trung vị có điều kiện. Không chỉ viết công thức kết quả; hãy chỉ ra chính xác ở bước nào tính lồi của trị tuyệt đối và bình phương được dùng.
+\end{exercise}
+
+\begin{exercise}
+Cho một tập mờ \(A\) trên \(\mathbb{R}\). Chứng minh lại định lý biểu diễn qua \(\alpha\)-cut:
+\[
+\mu_A(x)=\sup\{\alpha\in(0,1]:x\in A_\alpha\}.
+\]
+Sau đó giải thích vì sao kết quả này làm cho lý thuyết số mờ tính toán được hơn nhiều.
+\end{exercise}
+
+\textbf{Nhóm 2: bài tập về logic mờ và ANFIS.} Mục tiêu của nhóm này là buộc người học nối định nghĩa với cấu trúc mô hình cụ thể.
+
+\begin{exercise}
+Xét một hệ Sugeno có hai luật, một đầu vào \(x\), và hai hàm thuộc Gaussian. Hãy viết công thức đầu ra cuối cùng dưới dạng trung bình có trọng số, rồi tính đạo hàm của đầu ra theo tâm của hàm thuộc thứ nhất. Sau đó bình luận xem ở đâu trong công thức này xuất hiện nguy cơ gradient rất nhỏ.
+\end{exercise}
+
+\begin{exercise}
+Thiết kế một phân hoạch mờ ba nhãn \emph{THAP, TRUNG BINH, CAO} cho đại lượng tỷ suất thay đổi ngày trên miền \([-0.1,0.1]\). Hãy làm hai phiên bản: một bằng tam giác, một bằng Gaussian. So sánh hai phiên bản theo ba tiêu chí: tính diễn giải, độ trơn để tối ưu, và độ nhạy khi dữ liệu lệch phân phối.
+\end{exercise}
+
+\begin{exercise}
+Giả sử bạn có hai hàm thuộc Gaussian được gắn nhãn LOW và HIGH. Hãy đề xuất một cách tham số hóa để luôn bảo đảm tâm của HIGH không nhỏ hơn tâm của LOW trong suốt quá trình học. Sau đó phân tích xem ràng buộc đó giúp gì cho diễn giải và có thể làm hại gì cho độ tự do biểu diễn.
+\end{exercise}
+
+\textbf{Nhóm 3: bài tập về thiết kế mô hình và đánh giá chuỗi thời gian.} Đây là nhóm bài tập biến kiến thức lý thuyết thành khả năng dựng thí nghiệm đúng.
+
+\begin{exercise}
+Viết lại một pipeline tạo cửa sổ chuỗi thời gian gồm train, validation, test theo thứ tự thời gian. Chỉ ra thật rõ các bước nào được phép \emph{fit} trên train và các bước nào chỉ được \emph{transform}. Sau đó thử cố ý làm sai bằng cách fit bộ chuẩn hóa trên toàn bộ dữ liệu và mô tả sự khác biệt về logic đánh giá.
+\end{exercise}
+
+\begin{exercise}
+Đề xuất một tham số hóa đầu ra cho bài toán OHLC sao cho các ràng buộc
+\[
+\widehat H\ge \max(\widehat O,\widehat C),\qquad
+\widehat L\le \min(\widehat O,\widehat C)
+\]
+được bảo đảm theo định nghĩa, không cần thêm penalty. Gợi ý: dùng giá đóng cửa dự báo và hai biên độ không âm.
+\end{exercise}
+
+\begin{exercise}
+Thiết kế một \emph{ablation study} tối thiểu cho mô hình lai mờ + BiLSTM. Bạn sẽ so sánh những biến thể nào để trả lời ba câu hỏi: nhánh mờ có ích không, BiLSTM có ích không, và khởi tạo K-Means có ích không. Đừng chỉ liệt kê mô hình; hãy nêu rõ tiêu chí đọc kết quả.
+\end{exercise}
+
+\textbf{Nhóm 4: bài tập đọc code và kiểm toán kỹ thuật.} Đây là nhóm gần nhất với công việc của một nhà nghiên cứu hoặc kỹ sư phải đánh giá một repo thật.
+
+\begin{exercise}
+Mở lại file \texttt{run\_feature\_group\_anfis.py} và viết toàn bộ hàm \texttt{prepare\_data} bằng ký hiệu toán học. Hãy định nghĩa chính xác từng đặc trưng, từng mục tiêu, từng tensor đầu ra, và chỉ ra tại bước nào điều kiện thông tin của chuỗi thời gian bị vi phạm.
+\end{exercise}
+
+\begin{exercise}
+Trong \texttt{run\_feature\_group\_anfis.py}, hãy chỉ ra mọi nơi mà tập test được dùng trước khi báo cáo kết quả cuối. Sau đó viết lại quy trình đúng bằng mã giả. Bài này chỉ hoàn thành khi bạn phân biệt được rõ vai trò của train, validation và test bằng lời của chính mình.
+\end{exercise}
+
+\begin{exercise}
+Viết một hàm trích xuất đầy đủ hệ quả của từng luật trong lớp \texttt{FeatureGroupANFIS}. Mục tiêu cuối là in được luật dưới dạng:
+\[
+\text{IF } \cdots \text{ THEN } y_k = a_0 + a_1x_1+\cdots + a_dx_d.
+\]
+Sau đó, bình luận xem việc có luật đầy đủ đã đủ để gọi đầu ra cuối của mô hình là giải thích được hay chưa.
+\end{exercise}
+
+\begin{exercise}
+Hãy thử thiết kế một phiên bản không dùng BiLSTM, chỉ dùng các mô hình Sugeno cục bộ hoặc ANFIS nhiều đầu ra. So sánh trung thực với phiên bản lai hiện tại về ba mặt: độ chính xác kỳ vọng, chi phí huấn luyện, và mức độ diễn giải có thể bảo vệ được.
+\end{exercise}
+
+\section{Kết lời}
+
+Kết thúc một giáo trình dài, điều người học thường cần nhất không phải là thêm một danh sách thuật ngữ, mà là một cảm giác định hướng rõ ràng: từ đây mình nên nhìn mô hình như thế nào, nên học tiếp theo nhịp nào, và nên tự kiểm tra mình bằng loại bài tập nào. Nếu chương cuối này làm tốt nhiệm vụ của nó, thì người đọc sẽ rời cuốn sách không chỉ với một túi kiến thức, mà với một chuẩn mực làm việc: tôn trọng bài toán, tôn trọng giao thức, tôn trọng ngữ nghĩa, và đủ trung thực để không gọi một mô hình là ``giải thích được'' khi phần có thể giải thích thật ra chỉ là một mảnh nhỏ của toàn hệ thống.
+
+Giữ được chuẩn mực ấy, bạn sẽ học nhanh hơn, nhưng quan trọng hơn, bạn sẽ học chắc hơn. Và trong một lĩnh vực đang thay đổi rất nhanh như ML, DL và logic mờ ứng dụng, học chắc luôn có giá trị lâu hơn học ào ạt.

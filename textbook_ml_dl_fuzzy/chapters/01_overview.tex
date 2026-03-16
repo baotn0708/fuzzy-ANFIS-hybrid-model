@@ -1,0 +1,113 @@
+\chapter{Tổng quan thống nhất về học máy, học sâu và logic mờ}
+
+\section{Học máy là bài toán xấp xỉ hàm dưới ràng buộc dữ liệu}
+
+Một cách nhìn đơn giản nhưng cực mạnh về học máy là xem nó như bài toán xấp xỉ hàm. Ta có một không gian đầu vào $\mathcal{X}$, một không gian đầu ra $\mathcal{Y}$, và một quan hệ tiềm ẩn giữa chúng mà ta không biết trực tiếp. Nếu dữ liệu được sinh bởi một phân phối $P(\bm{x},y)$, thì về bản chất ta muốn tìm một hàm $f$ sao cho $f(\bm{x})$ ``gần'' $y$ theo một khái niệm gần nào đó, được mô tả bởi \emph{hàm mất mát} (\emph{loss function}) $\ell$.
+
+Về mặt hình thức, nếu được phép tìm trên tất cả các hàm đo được, bài toán lý tưởng là
+\[
+f^\star \in \argmin_{f} \E[\ell(f(\bm{x}),y)].
+\]
+Nhưng bài toán này không trực tiếp giải được vì ít nhất ba lý do. Thứ nhất, ta không biết phân phối sinh dữ liệu. Thứ hai, không gian tất cả các hàm là quá lớn. Thứ ba, ngay cả khi biết phân phối, bài toán tối ưu vẫn có thể vô cùng khó. Bởi vậy, học máy đặt ra một chiến lược gồm ba bước:
+
+\begin{enumerate}
+\item chọn một họ tham số hóa $\{f_\theta : \theta \in \Theta\}$;
+\item dùng dữ liệu hữu hạn để xây dựng rủi ro thực nghiệm $\widehat{R}_n(\theta)$;
+\item giải một bài toán tối ưu hữu hạn trên $\Theta$.
+\end{enumerate}
+
+Ba bước này xuất hiện ở hầu hết mọi mô hình, từ hồi quy tuyến tính đến mạng nơ-ron sâu. Hồi quy tuyến tính chọn họ hàm affine. \emph{Kernel method} (phương pháp hạt nhân) chọn một không gian Hilbert tái sinh phong phú hơn. Cây quyết định chọn lớp hàm dạng phân hoạch từng phần. Mạng nơ-ron chọn lớp hàm là hợp thành của các biến đổi affine và phi tuyến. ANFIS chọn lớp hàm gồm các luật mờ có trọng số và \emph{consequent} (vế hệ quả) Sugeno.
+
+Điều quan trọng là: mô hình không chỉ khác nhau ở ``sức mạnh biểu diễn'', mà còn khác nhau ở hình học của bài toán học. Hồi quy \emph{ridge} là bài toán lồi, có nghiệm đóng. Hồi quy logistic là lồi nhưng không có nghiệm đóng đơn giản. Mạng sâu tổng quát là không lồi. ANFIS là mô hình lai: nếu cố định \emph{premise parameters} (tham số tiền đề), phần \emph{consequent} có thể trở thành bài toán bình phương tối thiểu; nếu phần tiền đề cũng học, bài toán trở thành phi lồi \citep{jang1993anfis}. Vì vậy, khi nói một mô hình ``tốt'', ta phải học cách trả lời: tốt theo nghĩa nào? Tốt về khả năng xấp xỉ? Tốt về khả năng học? Tốt về tổng quát hóa? Hay tốt về diễn giải?
+
+\section{Ba vấn đề lớn: biểu diễn, tổng quát hóa và diễn giải}
+
+\subsection{Biểu diễn}
+
+Sức mạnh biểu diễn của mô hình là khả năng của lớp hàm được chọn trong việc mô tả những quan hệ phức tạp. Hồi quy tuyến tính có sức mạnh hạn chế nếu biến đầu vào đi vào một cách trực tiếp, nhưng có thể mạnh hơn rất nhiều nếu ta mở rộng đặc trưng. \emph{Kernel trick} (mẹo hạt nhân) cho phép thực hiện điều đó một cách gián tiếp. Học sâu tự học biểu diễn thông qua các lớp trung gian. Hệ mờ đưa sức mạnh biểu diễn vào sự kết hợp các luật ngôn ngữ và các hàm thuộc. Mỗi cách biểu diễn sẽ áp đặt một độ trơn nhất định lên hàm cần học.
+
+\subsection{Tổng quát hóa}
+
+Tổng quát hóa là khả năng hoạt động tốt trên dữ liệu chưa thấy. Đây không phải là chi tiết phụ. Một mô hình khớp cực tốt trên tập huấn luyện nhưng thua trên tập kiểm tra về cơ bản là không giải được bài toán học máy. Vấn đề tổng quát hóa đưa đến các khái niệm như \emph{bias--variance trade-off} (đánh đổi giữa độ chệch và phương sai), \emph{overfitting} (quá khớp), điều chuẩn, \emph{cross-validation} (kiểm định chéo), và \emph{sample complexity} (độ phức tạp theo số mẫu) \citep{hastie2009esl,bishop2006prml}. Trong chuỗi thời gian, tổng quát hóa còn nhạy cảm hơn vì thứ tự thời gian áp đặt cấu trúc thông tin: tương lai không được rò rỉ vào quá khứ.
+
+\subsection{Diễn giải}
+
+Con người hiếm khi hài lòng với một con số dự báo nếu không hiểu được nó được tạo ra thế nào. Tuy nhiên, diễn giải không phải một khái niệm đơn. Một mô hình có thể diễn giải ở cấp cục bộ nhưng không ở cấp toàn cục. Một hệ mờ có thể đọc được luật, nhưng nếu sau lớp mờ ta lại nối vào một khối học sâu không đọc được, thì khả năng diễn giải sẽ chỉ còn một phần. Đây là lý do ta sẽ không vô điều kiện đồng nhất ``có fuzzy'' với ``có thể giải thích được''.
+
+\section{Thống kê học máy và kỹ thuật biểu diễn}
+
+Trong nhiều tài liệu, \emph{Machine Learning} (học máy) được chia thành \emph{supervised learning} (học có giám sát), \emph{unsupervised learning} (học không giám sát), \emph{self-supervised learning} (tự giám sát), và \emph{reinforcement learning} (học tăng cường). Cách chia này hữu dụng, nhưng nếu dùng nó quá sớm, người mới dễ bỏ lỡ tính thống nhất bên dưới.
+
+Trong học có giám sát, ta có nhãn mục tiêu và muốn học ánh xạ từ $\bm{x}$ sang $y$. Hồi quy và phân loại nằm ở đây. Trong học không giám sát, ta muốn tìm cấu trúc nội tại của dữ liệu mà không có nhãn rõ ràng: phân cụm, giảm chiều, mô hình mật độ, biến ẩn. Trong tự giám sát, ta tạo ra nhãn giả từ chính dữ liệu. Trong học tăng cường, dữ liệu đến từ tương tác có phản hồi trì hoãn.
+
+Được nhìn từ xa hơn, tất cả các kiểu học này đều trả lời câu hỏi: làm sao tạo ra một biểu diễn hữu ích từ dữ liệu, và làm sao sử dụng biểu diễn đó để ra quyết định? Học sâu nổi bật ở chỗ nó khiến quá trình tạo biểu diễn trở thành phần bên trong của bài toán tối ưu. Trong những mô hình cổ điển, ta thường phải thiết kế đặc trưng. Trong học sâu, đặc trưng được học. Trong logic mờ, đặc trưng vẫn tồn tại, nhưng ta còn gán cho chúng ý nghĩa ngôn ngữ. ANFIS đứng giữa hai thế giới: hàm thuộc là một dạng trích xuất đặc trưng phi tuyến, trong khi vế hệ quả Sugeno giống một mô hình cục bộ có cấu trúc tuyến tính.
+
+\section{Khung nhìn Bayes và khung nhìn tối ưu}
+
+Có hai cách nhìn lớn về học máy. Cách nhìn thứ nhất là tối ưu thuần túy: chọn hàm mất mát, rồi tối thiểu hóa nó. Cách nhìn thứ hai là xác suất/Bayes: chọn mô hình xác suất $p_\theta(y|\bm{x})$, đặt \emph{prior} (phân phối tiên nghiệm) lên tham số nếu cần, rồi sử dụng suy diễn để tìm \emph{posterior} (phân phối hậu nghiệm) hay nghiệm \emph{MAP} (cực đại hậu nghiệm).
+
+Hai cách nhìn này thường hội tụ vào nhau. Ví dụ, nếu giả sử
+\[
+y = \bm{w}^\top \bm{x} + b + \varepsilon,\qquad \varepsilon \sim \mathcal{N}(0,\sigma^2),
+\]
+thì tối đa hóa \emph{likelihood} (hàm khả năng) tương đương với tối thiểu hóa tổng bình phương sai số. Nếu ta đặt \emph{prior} Gaussian lên $\bm{w}$, bài toán MAP tương đương với hồi quy ridge. Sự song song giữa thống kê và tối ưu là một chủ đề lớn của tài liệu này: rất nhiều ``thuật toán'' hóa ra là hệ quả của một giả thiết xác suất.
+
+Với logic mờ, khung Bayes không xuất hiện theo cách trực tiếp như vậy, vì \emph{membership degree} (độ thuộc) không phải xác suất. Tuy nhiên, một tinh thần chung vẫn còn: ta đang mô hình hóa bất định và mơ hồ theo một ngôn ngữ hình thức nào đó. Xác suất mô tả bất định do thiếu thông tin ngẫu nhiên; logic mờ mô tả độ mờ của khái niệm. Hai thứ này liên quan nhưng không đồng nhất.
+
+\section{Từ mô hình cổ điển đến học sâu}
+
+Sẽ là sai nếu ta xem học sâu là một cuộc cắt đứt khỏi học máy cổ điển. Mạng nơ-ron sâu là một phần của lịch sử dài hơn về xấp xỉ hàm và tối ưu. \emph{Perceptron} nối tiếp bộ phân loại tuyến tính. \emph{Multi-layer perceptron} (mạng nhiều lớp) tổng quát hóa bằng các lớp phi tuyến. \emph{Backpropagation} đơn giản là sự áp dụng quy tắc dây chuyền có hệ thống. Các kỹ thuật điều chuẩn, \emph{mini-batch}, \emph{momentum}, và sau này là \emph{Adam} chỉ là những biện pháp để giải bài toán tối ưu tham số lớn và không lồi \citep{goodfellow2016dl}.
+
+Tuy nhiên, học sâu bổ sung hai thứ quan trọng. Thứ nhất, độ sâu của biểu diễn làm cho cùng một số lượng tham số có thể biểu diễn những hàm khó hơn so với mạng nông. Thứ hai, nó cho phép học biểu diễn đặc trưng trực tiếp từ dữ liệu thô, nhất là khi dữ liệu có cấu trúc phức tạp như ảnh, âm thanh, văn bản, hay chuỗi thời gian đã biến đổi.
+
+Trong dự báo tài chính, học sâu thường được sử dụng để học phụ thuộc thời gian, thay vì chỉ nhìn ánh xạ tĩnh giữa vectơ đặc trưng và đầu ra. \emph{LSTM} được thiết kế để giải quyết vấn đề \emph{vanishing gradient} (triệt tiêu gradient) trong \emph{RNN} chuẩn \citep{hochreiter1997lstm}. \emph{BiLSTM} thêm một hướng đọc ngược chuỗi \citep{schuster1997brnn}. Tuy nhiên, sức mạnh này không đồng nghĩa là nó luôn phù hợp; ta phải hỏi chuỗi dữ liệu có đủ dài, có ổn định, và có tri thức tiên nghiệm nào giúp điều chuẩn hay không.
+
+\section{Từ logic kinh điển đến logic mờ}
+
+Logic kinh điển làm việc với mệnh đề đúng hoặc sai. Trong rất nhiều bài toán kỹ thuật, ta gặp những khái niệm không có biên giới sắc nét. Nhiệt độ 29$^\circ$C có ``nóng'' không? Biến động giá 1.8\% là ``tăng mạnh'' hay ``tăng vừa''? Nếu ép mọi khái niệm về 0 hoặc 1, ta mất đi tính liên tục mà con người thực sự sử dụng khi suy luận.
+
+\emph{Fuzzy set theory} (lý thuyết tập mờ) của Zadeh \citep{zadeh1965fuzzy} đề xuất dùng mức độ thuộc trong đoạn $[0,1]$ để mô tả những khái niệm này. Từ đó, ta có thể xây dựng quy tắc như
+\[
+\text{Nếu biến động giá là CAO và độ rộng dao động là THẤP thì chế độ thị trường là ỔN ĐỊNH.}
+\]
+Khác với hệ thống xác suất, mức ``0.7'' ở đây không có nghĩa là biến cố có xác suất 70\% xảy ra; nó chỉ ra mức độ mà một quan sát phù hợp với khái niệm ngôn ngữ ``CAO''.
+
+Logic mờ trở nên đặc biệt hấp dẫn khi con người cần giao tiếp với mô hình. Trong bối cảnh tài chính, ta có thể muốn nhìn được quy tắc ``nếu khoảng nhảy giữa giá mở và giá đóng của ngày trước lớn và biến động trong ngày hôm nay thấp thì kỳ vọng giá đóng cửa của ngày mai có xu hướng tăng nhẹ''. Đúng hay sai của quy tắc là vấn đề dữ liệu, nhưng ngôn ngữ của nó là ngôn ngữ mà nhà phân tích có thể thảo luận.
+
+\section{ANFIS như một cây cầu nối}
+
+Hệ \emph{ANFIS} (\emph{Adaptive Network-based Fuzzy Inference System}, hệ suy diễn mờ dựa trên mạng thích nghi) của Jang \citep{jang1993anfis} là một cột mốc quan trọng. Ý tưởng là biểu diễn hệ suy diễn mờ Sugeno dưới dạng một mạng thích nghi có thể học bằng dữ liệu. Mỗi lớp của mạng ứng với một bước trong suy diễn mờ:
+
+\begin{enumerate}
+\item tính giá trị hàm thuộc cho từng đặc trưng;
+\item kết hợp chúng thành \emph{firing strengths} (độ kích hoạt luật) của từng luật;
+\item chuẩn hóa độ kích hoạt;
+\item tính phần hệ quả của từng luật;
+\item lấy tổng có trọng số để ra đầu ra.
+\end{enumerate}
+
+Điểm đẹp của ANFIS là cấu trúc này vừa giống mô hình có thể đọc được, vừa phù hợp với tính toán gradient. Phần hệ quả Sugeno bậc nhất còn cho phép sử dụng \emph{least squares} (bình phương tối thiểu) khi phần tiền đề được cố định. Vì vậy, ANFIS không chỉ là ``fuzzy logic + neural network'' theo kiểu ghép khẩu hiệu, mà là một mô hình có gốc toán học cụ thể.
+
+Tuy nhiên, ANFIS có một vấn đề lớn: số lượng luật tăng theo cấp số nhân. Nếu mỗi đặc trưng có $m$ hàm thuộc và ta có $d$ đặc trưng, số luật có thể là $m^d$. Đây là \emph{rule explosion} (bùng nổ số luật). Trong thực tế, rất nhiều biến thể ANFIS được đề xuất để giảm vấn đề này: phân cụm, chia nhóm đặc trưng, hệ mờ phân cấp, hay cơ sở luật thưa. File \texttt{run\_feature\_group\_anfis.py} mà ta phân tích ở cuối tài liệu cũng đi theo tinh thần đó: tách đặc trưng thành nhóm \emph{returns} (tỷ suất thay đổi) và \emph{indicators} (chỉ báo) để tránh nổ luật.
+
+\section{Chuỗi thời gian, dự báo và những cái bẫy đánh giá}
+
+\emph{Forecasting} (dự báo) chuỗi thời gian đặt ra những ràng buộc đặc biệt. Với dữ liệu i.i.d., ta thường xáo trộn và chia tập huấn luyện/kiểm tra. Với dữ liệu theo thời gian, cách làm đó dễ gây \emph{leakage}. Nếu thông tin từ tương lai rò vào quá khứ dù chỉ qua một bộ \emph{scaler} (bộ chuẩn hóa) được fit trên toàn bộ dữ liệu, kết quả sẽ lạc quan giả tạo. \citet{hyndman2021fpp3} nhấn mạnh rằng đánh giá dự báo phải tôn trọng thứ tự thời gian, và tập thẩm định/tập kiểm tra phải được tách theo hướng tiến tới.
+
+Trong tài chính, một cái bẫy khác là \emph{metric} (chỉ số đánh giá). \emph{MAPE} có thể không ổn định khi mẫu số gần 0. $R^2$ cao trên mức giá có thể đến chủ yếu từ xu hướng giá dài hạn. \emph{Directional accuracy} (độ chính xác hướng) nghe có vẻ hợp lý nhưng phụ thuộc mạnh vào định nghĩa ``hướng''. Huấn luyện trên tỷ suất sinh lợi nhưng đánh giá trên giá tuyệt đối có thể hợp lý nếu biến đổi nhất quán; nếu không, toàn bộ câu chuyện đánh giá có thể bị méo.
+
+Chính vì vậy, phần cuối tài liệu sẽ không chỉ nói mô hình trong code ``làm gì'', mà còn hỏi nó ``đánh giá cái gì, bằng cách nào, và có đang vô tình tự đánh lừa mình hay không''.
+
+\section{Một số nguyên lý để giữ trên bàn làm việc}
+
+Nguyên lý thứ nhất: không có mô hình thần kỳ. Mỗi mô hình mạnh ở đâu đó và yếu ở đâu đó. Hồi quy tuyến tính đẹp vì nó rõ ràng. Cây quyết định đẹp vì nó phân mảnh dữ liệu theo logic dễ đọc. Mạng nơ-ron đẹp vì nó học biểu diễn phức tạp. Hệ mờ đẹp vì nó giữ ý nghĩa ngôn ngữ. ANFIS đẹp vì cố gắng kết hợp hai thế giới. Nhưng đẹp ở mặt này thường phải trả giá ở mặt khác.
+
+Nguyên lý thứ hai: dữ liệu và giao thức đánh giá quan trọng hơn kiểu mô hình. Một mô hình bình thường nhưng giao thức đúng có giá trị hơn một mô hình phô trương nhưng rò rỉ thông tin nặng. Nếu không tin điều này, hãy đợi đến Chương~11: ta sẽ thấy một vài dòng code nhỏ có thể làm thay đổi hoàn toàn ý nghĩa của các \emph{metric} báo cáo.
+
+Nguyên lý thứ ba: khả năng diễn giải phải được phân tích theo chuỗi xử lý, không theo nhãn dán. Nếu một nhánh mờ sinh ra các ``điểm số luật'' rồi sau đó bị trộn với \emph{BiLSTM} và \emph{Dense layer} (lớp kết nối đầy đủ), thì phần mờ chỉ giải thích được một lát cắt của hệ thống. Phần còn lại vẫn là một ánh xạ học máy không minh bạch. Gọi cả mô hình là ``explainable'' (giải thích được) khi không nói rõ phạm vi giải thích là một cách nói quá tay.
+
+Nguyên lý cuối cùng: học máy là môn của kỷ luật trí tuệ. Kỷ luật ở định nghĩa, kỷ luật ở tách dữ liệu, kỷ luật ở lập luận, và kỷ luật ở cách nghi ngờ kết quả quá đẹp. Người mới rất cần được nghe điều này sớm, vì quá nhiều hướng dẫn ngắn trên mạng vô tình dạy người ta cách chạy theo chỉ số đẹp trước khi học cách tin được nó.
+
+\section{Kết}
+
+Sau chương này, ta có thể tóm lại bố cục của cuốn bài giảng bằng một câu. Học máy cung cấp khung thống kê và tối ưu để học từ dữ liệu; học sâu đẩy khung đó đến mức biểu diễn sâu; logic mờ giữ lại khả năng lý giải bằng ngôn ngữ khái niệm; ANFIS tìm cách nối hai phía; dự báo chuỗi thời gian buộc tất cả phải đối mặt với kỷ luật đánh giá. Chính trên nền đó, các chương sau sẽ đi từ toán học căn bản đến phân tích chi tiết mô hình cụ thể.

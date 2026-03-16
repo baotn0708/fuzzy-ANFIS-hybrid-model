@@ -1,0 +1,273 @@
+\chapter{Chuỗi thời gian, dự báo và RNN/LSTM/BiLSTM}
+
+\section{Tư duy đúng về chuỗi thời gian: dữ liệu và thông tin không phải một}
+
+Khi nhìn một bảng dữ liệu chuỗi thời gian, ta dễ quên rằng mỗi hàng dữ liệu không chỉ là một điểm trong không gian đặc trưng, mà còn gắn với một trạng thái thông tin. Trong dự báo, điều quyết định không chỉ là ``ta có dữ liệu gì'', mà là ``đến thời điểm này ta được phép biết những gì''. Hai câu hỏi đó không hoàn toàn giống nhau.
+
+Để diễn đạt chặt chẽ hơn, ta có thể nghĩ đến một họ tập thông tin
+\[
+\mathcal{F}_t,
+\]
+trong đó \(\mathcal{F}_t\) chứa mọi thông tin hợp lệ có thể dùng đến thời điểm \(t\). Một dự báo một bước hợp lệ phải có dạng
+\[
+\hat{y}_{t+1|t}=g(\mathcal{F}_t).
+\]
+Nếu một đặc trưng nào đó sử dụng dữ liệu của \(t+1\), dù chỉ gián tiếp qua một thống kê chuẩn hóa hay một phép chọn tham số, thì nó không còn là hàm của \(\mathcal{F}_t\) nữa. Đây chính là lõi logic của rò rỉ thông tin trong chuỗi thời gian.
+
+\section{Tại sao dữ liệu chuỗi thời gian không thể bị đối xử như dữ liệu i.i.d.}
+
+Với dữ liệu i.i.d., ta có thể xáo trộn và chia ngẫu nhiên tập huấn luyện và tập kiểm tra. Với chuỗi thời gian, xáo trộn như vậy thường phá vỡ cấu trúc thông tin. Nếu mẫu ở năm 2025 bị đưa vào tập huấn luyện còn mẫu ở năm 2020 lại bị đưa vào tập kiểm tra, mô hình đã được phép học từ tương lai của chính dữ liệu mà nó bị yêu cầu kiểm tra trên quá khứ.
+
+Nguyên lý này không chỉ áp dụng cho nhãn mục tiêu. Nó áp dụng cho mọi bước học từ dữ liệu:
+
+\begin{enumerate}
+\item chuẩn hóa;
+\item giảm chiều;
+\item chọn đặc trưng;
+\item phân cụm;
+\item chỉnh siêu tham số;
+\item dừng sớm;
+\item chọn \emph{seed} tốt nhất.
+\end{enumerate}
+
+Do đó, chuỗi thời gian không phải là ``dữ liệu thường nhưng có thêm chỉ số thời gian''. Nó là một miền ứng dụng mà giao thức đánh giá là một phần của định nghĩa bài toán.
+
+\section{Tính dừng, xu thế và lý do người ta thích dùng return}
+
+Nhiều chuỗi tài chính ở mức giá tuyệt đối có xu thế, thay đổi thang đo, và thay đổi độ biến động theo thời gian. Điều này làm cho việc học trực tiếp trên mức giá tuyệt đối trở nên khó diễn giải và dễ tạo chỉ số ảo đẹp. Nếu giá tăng dần theo thời gian, một mô hình rất đơn giản vẫn có thể đạt \(R^2\) cao bằng cách bám xu thế mức giá.
+
+Vì vậy người ta hay chuyển sang các đại lượng ổn định hơn như \emph{return}:
+\[
+r_t=\frac{P_t-P_{t-1}}{P_{t-1}},
+\qquad
+\tilde{r}_t=\log P_t-\log P_{t-1}.
+\]
+\emph{Log-return} có tính cộng dồn theo thời gian:
+\[
+\log \frac{P_t}{P_{t-k}}
+=
+\sum_{j=0}^{k-1}\log \frac{P_{t-j}}{P_{t-j-1}}.
+\]
+Đây là ưu điểm lớn trong nhiều phân tích lý thuyết. Tuy nhiên, \emph{simple return} lại dễ giải thích trực quan hơn cho người mới.
+
+\subsection{Một hiểu lầm thường gặp về return}
+
+Nói rằng return ``dừng hơn'' không có nghĩa là return luôn dừng. Nhiều chuỗi return tài chính vẫn có hiện tượng cụm biến động, đuôi dày, bất đối xứng, và thay đổi chế độ. Vì vậy, chuyển sang return giúp ích, nhưng không tự động biến bài toán thành đơn giản.
+
+\section{Biến mục tiêu trong dự báo: phải nói chính xác mốc so sánh}
+
+Giả sử ta muốn dự báo giá đóng ngày mai. Có ít nhất ba cách định nghĩa mục tiêu:
+
+\begin{enumerate}
+\item dự báo trực tiếp \(C_{t+1}\);
+\item dự báo \(\frac{C_{t+1}}{C_t}-1\);
+\item dự báo \(\log C_{t+1}-\log C_t\).
+\end{enumerate}
+
+Ba bài toán này liên quan, nhưng không giống nhau. Hàm mất mát, chỉ số đánh giá, và cách quy đổi kết quả đều phụ thuộc vào lựa chọn này. Nếu tài liệu không nói rõ mình đang dùng định nghĩa nào, rất nhiều tranh luận sau đó sẽ trở nên mơ hồ.
+
+Đối với bộ OHLC, tình huống còn tinh tế hơn. Ta có thể định nghĩa mục tiêu của \(\text{Open}_{t+1}\) theo \(\text{Open}_t\), theo \(\text{Close}_t\), hoặc theo log-ratio tương ứng. Mỗi cách có một ý nghĩa kinh tế riêng. Điều quan trọng không phải là chỉ có một cách đúng, mà là phải nhất quán và thành thật trong diễn giải.
+
+\section{Cửa sổ trượt: biến chuỗi thành tensor đầu vào}
+
+Một cách chuẩn để đưa chuỗi vào mô hình học là dùng cửa sổ độ dài \(L\):
+\[
+X_t=
+\begin{bmatrix}
+\bm{x}_{t-L+1}\\
+\bm{x}_{t-L+2}\\
+\vdots\\
+\bm{x}_t
+\end{bmatrix}
+\in \R^{L\times d},
+\qquad
+y_t=\text{mục tiêu tại }t+1.
+\]
+Mỗi mẫu huấn luyện khi đó không còn là một vectơ, mà là một khối gồm \(L\) bước liên tiếp. Điều này cho phép mô hình học không chỉ tương quan đồng thời giữa các đặc trưng, mà còn phụ thuộc theo độ trễ.
+
+\subsection{Điểm dễ sai nhất: căn chỉnh chỉ số}
+
+Giả sử \(L=3\). Nếu dùng \(X_t=(x_{t-2},x_{t-1},x_t)\) để dự báo \(y_{t+1}\), thì mẫu đầu tiên hợp lệ là khi \(t=3\) nếu chỉ số bắt đầu từ 1. Chỉ cần lệch một đơn vị, ta có thể:
+
+\begin{enumerate}
+\item vô tình dùng cả \(x_{t+1}\) trong cửa sổ;
+\item hoặc bỏ phí một lượng dữ liệu hợp lệ;
+\item hoặc căn chỉnh sai giữa giá hiện tại và giá tương lai.
+\end{enumerate}
+
+Đây là lý do tại sao trong phần phân tích code, ta phải đọc rất kỹ từng phép \texttt{shift}, từng chỉ số vòng lặp, chứ không thể chỉ nghe mô tả bằng lời.
+
+\section{Dự báo một bước, nhiều bước, trực tiếp và đệ quy}
+
+Không phải mọi bài toán chuỗi thời gian đều là dự báo một bước. Nếu muốn dự báo \(h\) bước tới, ta có nhiều chiến lược.
+
+\subsection{Dự báo trực tiếp}
+
+Ta học riêng một mô hình cho mỗi chân trời:
+\[
+\hat{y}_{t+h|t}=f_h(\mathcal{F}_t).
+\]
+Ưu điểm là tránh tích lũy sai số đệ quy. Nhược điểm là phải học nhiều mô hình hoặc một mô hình đa đầu ra phức tạp hơn.
+
+\subsection{Dự báo đệ quy}
+
+Ta học một mô hình một bước
+\[
+\hat{y}_{t+1|t}=f(\mathcal{F}_t),
+\]
+rồi dùng chính dự báo đó làm đầu vào để đi tiếp đến \(t+2,t+3,\dots\). Cách này gọn, nhưng sai số có thể chồng chất.
+
+\subsection{Dự báo hỗn hợp}
+
+Có những cách lai giữa trực tiếp và đệ quy, ví dụ dùng mô hình trực tiếp cho vài bước đầu rồi đệ quy tiếp, hoặc học cả trạng thái ẩn lẫn dự báo. Điều cần giữ trong đầu là: chiến lược nhiều bước không phải chi tiết phụ; nó thay đổi hoàn toàn cấu trúc lỗi.
+
+\section{Đánh giá chuỗi thời gian: backtesting quan trọng ngang mô hình}
+
+Trong học máy tổng quát, người ta hay nhấn mạnh kiến trúc. Trong dự báo chuỗi thời gian, \emph{backtesting} (kiểm thử lùi theo thời gian) có thể quan trọng ngang kiến trúc. Một mô hình bình thường nhưng \emph{backtest} đúng đáng tin hơn nhiều so với một mô hình phức tạp nhưng dùng tập kiểm tra như tập thẩm định.
+
+\subsection{Ba giao thức đánh giá cơ bản}
+
+\begin{enumerate}
+\item \textbf{Hold-out theo thời gian}: lấy đoạn đầu làm huấn luyện, đoạn giữa làm thẩm định, đoạn cuối làm kiểm tra.
+\item \textbf{Rolling window}: cửa sổ huấn luyện trượt, kích thước cố định.
+\item \textbf{Expanding window}: cửa sổ huấn luyện mở rộng dần theo thời gian.
+\end{enumerate}
+
+Mỗi giao thức phản ánh một giả thiết vận hành khác nhau. Nếu hệ thống ngoài đời luôn được huấn luyện lại với dữ liệu mới, \emph{rolling} hoặc \emph{expanding} sẽ hợp lý hơn một phép chia giữ nguyên đơn giản.
+
+\subsection{Tập kiểm tra không phải nơi chọn mô hình}
+
+Trong chuỗi thời gian, quy tắc này càng nghiêm hơn vì số mẫu hiệu dụng thường ít hơn dữ liệu i.i.d. Nếu ta vừa dừng sớm theo tập kiểm tra, vừa chọn \emph{seed} tốt nhất theo tập kiểm tra, rồi lại báo cáo tập kiểm tra, thì ta đang dùng cùng một chuỗi dữ liệu cho ba mục đích khác nhau. Khi đó, không còn lý do gì để tin rằng chỉ số báo cáo phản ánh đúng hiệu năng ngoài mẫu.
+
+\section{RNN cơ bản và lý do nó gặp khó khăn}
+
+RNN chuẩn đặt
+\[
+\bm{h}_t=\phi(W_x\bm{x}_t+W_h\bm{h}_{t-1}+\bm{b}),
+\qquad
+\hat{\bm{y}}_t=W_y\bm{h}_t+\bm{c}.
+\]
+Vì trạng thái \(\bm{h}_t\) được tính từ trạng thái trước đó, mô hình có một cơ chế ghi nhớ tự nhiên. Nhưng chính vì dùng lặp cùng ma trận \(W_h\), gradient theo các trạng thái cũ có dạng tích lũy của nhiều Jacobian. Đây là nguồn gốc của triệt tiêu và bùng nổ gradient trong RNN.
+
+\subsection{Một phân tích rất ngắn về triệt tiêu gradient}
+
+Nếu bỏ qua phi tuyến để nhìn gần đúng tuyến tính, ta có
+\[
+\bm{h}_t\approx W_h\bm{h}_{t-1}.
+\]
+Khi đó
+\[
+\bm{h}_t\approx W_h^k \bm{h}_{t-k}.
+\]
+Nếu bán kính phổ của \(W_h\) nhỏ hơn 1, \(W_h^k\) suy giảm rất nhanh theo \(k\). Gradient lan truyền ngược cũng chịu quy luật tương tự. Đây là lý do RNN chuẩn khó học phụ thuộc dài hạn.
+
+\section{LSTM: cổng nhớ như một cấu trúc tối ưu hóa, không chỉ là một công thức}
+
+LSTM được đề xuất để tạo ra một đường truyền thông tin dài hạn ổn định hơn. Các công thức của nó là:
+\begin{align*}
+\bm{i}_t &= \sigma(W_i \bm{x}_t + U_i \bm{h}_{t-1} + \bm{b}_i),\\
+\bm{f}_t &= \sigma(W_f \bm{x}_t + U_f \bm{h}_{t-1} + \bm{b}_f),\\
+\bm{o}_t &= \sigma(W_o \bm{x}_t + U_o \bm{h}_{t-1} + \bm{b}_o),\\
+\tilde{\bm{c}}_t &= \tanh(W_c \bm{x}_t + U_c \bm{h}_{t-1} + \bm{b}_c),\\
+\bm{c}_t &= \bm{f}_t\odot \bm{c}_{t-1} + \bm{i}_t\odot \tilde{\bm{c}}_t,\\
+\bm{h}_t &= \bm{o}_t\odot \tanh(\bm{c}_t).
+\end{align*}
+
+Nếu đọc hời hợt, ta chỉ thấy đây là một tập công thức nhiều ký hiệu. Nếu đọc đúng, ta thấy LSTM thực chất chèn một ``đường cao tốc'' cho thông tin đi qua trạng thái nhớ \(\bm{c}_t\). Cổng quên điều khiển phần nào của quá khứ được giữ lại; cổng vào điều khiển phần nào của thông tin mới được chèn thêm; cổng ra điều khiển phần nào của trạng thái nhớ được lộ ra cho đầu ra.
+
+\subsection{Ý nghĩa của cổng quên}
+
+Nếu \(\bm{f}_t\) gần 1 trong một số chiều, thành phần tương ứng của \(\bm{c}_{t-1}\) gần như đi xuyên qua sang \(\bm{c}_t\). Nói cách khác, mô hình có thể học cách ``đừng động vào thông tin này quá sớm''. Đây là cơ chế mà RNN chuẩn không có.
+
+\subsection{LSTM không phải ký ức vô hạn}
+
+Tuy nhiên, ta cũng không nên thần thoại hóa. LSTM \emph{có khả năng học} phụ thuộc dài hạn tốt hơn RNN chuẩn, nhưng không có nghĩa là cứ tăng độ dài chuỗi thì LSTM sẽ nắm được hết mọi cấu trúc. Khả năng đó còn phụ thuộc vào dữ liệu, hàm mất mát, kiến trúc, và tối ưu.
+
+\section{BiLSTM trong dự báo: khi nào hợp lý, khi nào dễ bị hiểu nhầm}
+
+BiLSTM kết hợp một hướng đọc xuôi và một hướng đọc ngược trên \emph{chính cửa sổ đã quan sát}. Điều này rất hữu ích trong các bài toán như gán nhãn chuỗi, xử lý tiếng nói, hoặc phân tích toàn chuỗi, nơi tại vị trí \(t\) ta được phép nhìn cả bối cảnh trước và sau trong cùng một chuỗi đầu vào.
+
+Trong dự báo, câu hỏi là: đọc ngược như vậy có phạm luật thông tin không? Câu trả lời là:
+
+\begin{enumerate}
+\item nếu cửa sổ đầu vào chỉ gồm các bước đến thời điểm hiện tại \(t\), BiLSTM không nhìn vào tương lai thật sự \(t+1,t+2,\dots\), nên không tự động gây rò rỉ;
+\item nhưng BiLSTM làm cho cách diễn giải động học khó hơn, vì đầu ra cuối được xây từ hai hướng quét khác nhau trên cùng cửa sổ quá khứ.
+\end{enumerate}
+
+Đây là một điểm phải nói thật rõ. Không phải cứ thấy ``bi-directional'' là kết luận có rò rỉ. Nhưng cũng không được ngây thơ nghĩ rằng BiLSTM hoàn toàn vô hại về mặt diễn giải.
+
+\section{Dự báo tài chính với OHLC: bài toán có cấu trúc hình học nội tại}
+
+Bộ giá trị \((O,H,L,C)\) không phải bốn con số độc lập. Chúng phải thỏa:
+\[
+H\ge \max(O,C),\qquad L\le \min(O,C).
+\]
+Ngoài ra, khoảng \(H-L\) phải không âm, và trong nhiều bài toán ta còn quan tâm đến vị trí tương đối của \(O\) và \(C\) trong khoảng đó. Vì vậy, nếu ta cho mô hình dự báo bốn đầu ra độc lập rồi đánh giá từng đầu ra riêng lẻ, ta đang bỏ qua cấu trúc hình học quan trọng nhất của dữ liệu.
+
+\subsection{Một ví dụ về dự báo vô nghĩa nhưng RMSE vẫn đẹp}
+
+Giả sử giá thật là
+\[
+(O,H,L,C)=(100,106,98,104),
+\]
+còn dự báo là
+\[
+(\hat{O},\hat{H},\hat{L},\hat{C})=(101,103,99,105).
+\]
+Sai số trên từng biến không quá lớn. Nhưng dự báo này vô lý vì \(\hat{H}=103<\hat{C}=105\). Nếu hệ thống phía sau cần mô phỏng chiến lược giao dịch, chỉ một vi phạm như vậy đã đủ làm mất nghĩa của mẫu dự báo, cho dù RMSE có thể vẫn chấp nhận được.
+
+\section{Chỉ số đánh giá cho chuỗi thời gian: cần đọc đúng ngữ nghĩa}
+
+\emph{RMSE} nhạy với sai số lớn. \emph{MAE} dễ hiểu hơn về thang đo. \emph{MAPE} dễ đọc theo phần trăm nhưng kém ổn khi mẫu số nhỏ. \emph{SMAPE} sửa một phần vấn đề ấy. \emph{MASE} có lợi thế chuẩn hóa theo dự báo ngây thơ. \emph{Pinball loss} phù hợp với dự báo phân vị.
+
+\subsection{Độ chính xác hướng}
+
+Trong tài chính, người ta rất thích dùng \emph{directional accuracy}:
+\[
+\mathrm{DA}
+=
+\frac{1}{n}\sum_{t=1}^n
+\mathbf{1}\{\sgn(y_t-y_{t-1})=\sgn(\hat{y}_t-y_{t-1})\}.
+\]
+Nhưng chỉ số này chỉ có ý nghĩa khi \(y_t-y_{t-1}\) phản ánh đúng khái niệm ``hướng'' mà mô hình thật sự đang học. Nếu mô hình huấn luyện trên return so với một mốc nền khác, còn DA lại đo so với giá trước đó của chính biến, thì ta đang đặt hai khái niệm khác nhau vào cùng một bảng báo cáo.
+
+\section{Dự báo xác suất và bất định trong chuỗi thời gian}
+
+Một ngộ nhận rất phổ biến là: dự báo chỉ cần một con số. Trong nhiều ứng dụng, điều ta cần không chỉ là kỳ vọng có điều kiện, mà là toàn bộ phân phối có điều kiện. Ví dụ, trong quản trị rủi ro, đuôi trái của phân phối thường quan trọng hơn trung bình.
+
+Điều này dẫn đến các mô hình dự báo phân vị, mô hình \emph{distributional forecasting}, và các chỉ số như \emph{CRPS}. Ngay cả nếu tài liệu này tập trung nhiều vào dự báo điểm, người học vẫn nên ghi nhớ rằng dự báo điểm chỉ là một lát cắt của bài toán bất định.
+
+\section{Các nguồn rò rỉ thông tin đặc thù của chuỗi thời gian}
+
+Ngoài những lỗi tổng quát của học máy, chuỗi thời gian có các nguồn rò rỉ đặc thù:
+
+\begin{enumerate}
+\item dùng bộ chuẩn hóa fit trên toàn bộ chuỗi;
+\item tính đặc trưng tại \(t\) bằng cách vô tình dùng \(t+1\) qua các phép \texttt{shift} và \texttt{rolling};
+\item dùng tập kiểm tra cho dừng sớm;
+\item chọn lần chạy tốt nhất trên tập kiểm tra;
+\item tinh chỉnh chân trời dự báo sau khi đã nhìn kết quả kiểm tra.
+\end{enumerate}
+
+Những lỗi này rất nguy hiểm vì mô hình vẫn cho ra bảng số rất thuyết phục. Không có lỗi cú pháp nào nhắc ta rằng mình vừa phá hỏng tính hợp lệ của thí nghiệm.
+
+\section{Từ lý thuyết đến phần phân tích script}
+
+Khi đọc một script dự báo chuỗi thời gian, ta nên tự hỏi ít nhất tám câu:
+
+\begin{enumerate}
+\item đầu vào nào là hợp lệ ở thời điểm dự báo;
+\item biến mục tiêu được định nghĩa theo mốc nào;
+\item cửa sổ được căn chỉnh ra sao;
+\item chuẩn hóa được fit trên phần nào;
+\item tập thẩm định có tách thật không;
+\item tập kiểm tra có bị dùng trước báo cáo cuối không;
+\item đầu ra có tuân ràng buộc logic của miền không;
+\item chỉ số đánh giá có đồng bộ với mục tiêu học không.
+\end{enumerate}
+
+Nếu một script không trả lời được trọn bộ tám câu này một cách minh bạch, thì chưa nên tin vào các chỉ số của nó, bất kể kiến trúc trông hiện đại đến đâu.
+
+\section{Kết luận chương}
+
+Chuỗi thời gian không chỉ là dữ liệu có thêm cột thời gian; nó là dữ liệu chịu ràng buộc thông tin. Dự báo đúng vì vậy đòi hỏi đồng thời ba tầng kỷ luật: kỷ luật trong định nghĩa biến mục tiêu, kỷ luật trong thiết kế giao thức thẩm định, và kỷ luật trong việc tôn trọng cấu trúc logic của đầu ra. Những tầng kỷ luật này sẽ là nền để ta phán xét chính xác hơn mô hình ANFIS + BiLSTM ở phần sau.

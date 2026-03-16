@@ -1,0 +1,355 @@
+\chapter{Cơ sở của logic mờ và tập mờ}
+
+\section{Vì sao logic hai giá trị chưa đủ cho nhiều bài toán thật}
+
+Logic hai giá trị, hay logic kinh điển, là một trong những thành tựu đẹp nhất của toán học. Nó làm việc rất tốt khi biên giới của khái niệm là sắc nét: một số nguyên hoặc chẵn hoặc lẻ; một khóa điện hoặc bật hoặc tắt; một file hoặc tồn tại hoặc không tồn tại. Trong các tình huống ấy, việc gán cho mỗi mệnh đề một giá trị đúng hoặc sai là hoàn toàn tự nhiên. Ta có thể mô hình hóa một tập kinh điển \(A\subseteq X\) bằng hàm đặc trưng
+\[
+\chi_A(x)=
+\begin{cases}
+1, & x\in A,\\
+0, & x\notin A.
+\end{cases}
+\]
+Nếu đối tượng của ta thật sự có biên giới rạch ròi, cách mô tả này vừa gọn vừa mạnh.
+
+Nhưng phần lớn khái niệm mà con người dùng trong điều khiển, tài chính, kinh tế học, và học máy lại không có biên giới như vậy. Ta nói ``giá cao'', ``biến động mạnh'', ``mức rủi ro trung bình'', ``đầu ra tương đối ổn định'', ``tăng nhẹ'', ``giảm sâu''. Những cụm này không hoàn toàn tùy tiện, nhưng cũng không có ranh giới sắc như một định lý số học. Nếu ép chúng về 0 hoặc 1 bằng một ngưỡng cứng, ta đã thay một khái niệm mềm bằng một quyết định cứng. Điều đó đôi khi cần thiết cho hệ thống ra quyết định cuối cùng, nhưng lại quá thô ở tầng mô hình hóa.
+
+Chính chỗ này làm nảy sinh nhu cầu về logic mờ. Ý tưởng cốt lõi không phải là bác bỏ logic kinh điển, mà là mở rộng nó để mô tả những khái niệm có biên giới mềm. Một giá trị \(x\) có thể ``thuộc'' khái niệm \(A\) ở mức 0.2, 0.6, hay 0.95, tùy mức độ phù hợp của nó với ngữ nghĩa mà ta đang gán cho \(A\). Đây là một ngôn ngữ toán học cho \emph{mơ hồ của khái niệm}, chứ không phải cho \emph{ngẫu nhiên của biến cố}.
+
+Phân biệt này rất quan trọng. Nếu ngày mai trời mưa hay không là một biến cố ngẫu nhiên, xác suất là công cụ tự nhiên. Nhưng nếu ta muốn nói nhiệt độ 31 độ C ``khá nóng'' đến mức nào, thì thứ ta cần không phải xác suất 31 độ C sẽ nóng, mà là một mức độ phù hợp của 31 với khái niệm ``nóng''. Logic mờ xuất hiện chính xác ở điểm này \citep{zadeh1965fuzzy}.
+
+Trong bối cảnh học máy, logic mờ hấp dẫn vì hai lý do. Thứ nhất, nó cho phép ta đưa các nhãn ngôn ngữ như \emph{thấp}, \emph{vừa}, \emph{cao} vào mô hình mà không phải giả vờ rằng ranh giới giữa chúng là tuyệt đối. Thứ hai, nó tạo ra một cây cầu để chuyển từ cách con người phát biểu quy tắc sang một cấu trúc toán học có thể tính toán được. Câu ``nếu mức biến động cao và khoảng dao động lớn thì rủi ro tăng'' không còn chỉ là câu chữ; nó có thể trở thành một luật mờ có tham số, có mức kích hoạt, và có thể ghép vào hệ suy diễn.
+
+\section{Tập mờ, hàm thuộc, miền đỡ và lõi}
+
+\begin{definition}
+Cho một miền nền \(X\). Một \emph{tập mờ} \(A\) trên \(X\) là một ánh xạ
+\[
+\mu_A:X\to[0,1],
+\]
+trong đó \(\mu_A(x)\) được gọi là \emph{hàm thuộc} của \(A\). Giá trị \(\mu_A(x)\) biểu diễn mức độ mà phần tử \(x\) phù hợp với khái niệm \(A\).
+\end{definition}
+
+Nếu \(\mu_A(x)\in\{0,1\}\) với mọi \(x\in X\), ta thu lại đúng tập kinh điển. Vì vậy, tập mờ không phá hủy lý thuyết tập cổ điển; nó bao hàm lý thuyết đó như một trường hợp biên. Đó là một điểm sư phạm quan trọng: khi học logic mờ, ta không học một vũ trụ mới hoàn toàn tách biệt, mà học một sự mở rộng liên tục của điều mình đã biết.
+
+Để nói về cấu trúc của một tập mờ, người ta thường dùng thêm vài khái niệm:
+\[
+\operatorname{supp}(A)=\{x\in X:\mu_A(x)>0\},
+\qquad
+\operatorname{core}(A)=\{x\in X:\mu_A(x)=1\}.
+\]
+\(\operatorname{supp}(A)\) là \emph{miền đỡ} của tập mờ, tức miền nơi khái niệm còn có chút liên quan. \(\operatorname{core}(A)\) là \emph{lõi}, tức phần hoàn toàn phù hợp với khái niệm.
+
+Người ta cũng định nghĩa \emph{chiều cao} của tập mờ:
+\[
+h(A)=\sup_{x\in X}\mu_A(x).
+\]
+Nếu \(h(A)=1\), tập mờ được gọi là \emph{chuẩn hóa} hay \emph{normal}. Trực giác ở đây là: khái niệm ấy có ít nhất một vùng mà nó đạt mức phù hợp tối đa. Nhiều hệ suy diễn mờ giả định ngầm hoặc khuyến khích các tập mờ chuẩn hóa, vì nếu chiều cao thấp hơn 1 thì chính nhãn ngôn ngữ đã bị ``yếu đi'' ngay từ đầu.
+
+Trong thực hành, hàm thuộc thường được chọn trong một họ tham số hóa đơn giản. Ba dạng hay gặp nhất là tam giác, hình thang và Gaussian:
+\[
+\mu_{\mathrm{tri}}(x;a,b,c)=
+\begin{cases}
+0, & x\le a,\\[4pt]
+\dfrac{x-a}{b-a}, & a<x\le b,\\[6pt]
+\dfrac{c-x}{c-b}, & b<x<c,\\[6pt]
+0, & x\ge c,
+\end{cases}
+\]
+\[
+\mu_{\mathrm{trap}}(x;a,b,c,d)=
+\begin{cases}
+0, & x\le a,\\[4pt]
+\dfrac{x-a}{b-a}, & a<x\le b,\\[6pt]
+1, & b<x\le c,\\[4pt]
+\dfrac{d-x}{d-c}, & c<x<d,\\[6pt]
+0, & x\ge d,
+\end{cases}
+\]
+\[
+\mu_{\mathrm{Gauss}}(x;c,\sigma)=\exp\left(-\frac{(x-c)^2}{2\sigma^2}\right).
+\]
+Hàm tam giác và hình thang dễ trực quan hóa; Gaussian trơn, khả vi và đặc biệt thuận lợi cho tối ưu bằng gradient trong các mô hình lai như ANFIS. Không có một dạng nào luôn tốt nhất. Dạng hàm thuộc phải được chọn theo mục tiêu: ưu tiên khả năng diễn giải, ưu tiên tính trơn, hay ưu tiên ổn định trong tối ưu.
+
+\begin{remark}
+Điều người mới hay ngộ nhận là xem hàm thuộc như một ``xác suất'' hoặc một ``điểm tin cậy''. Cách nói ấy rất dễ làm hỏng trực giác. Hàm thuộc không nói về tần suất xảy ra, mà nói về mức độ phù hợp với một khái niệm. Đây là hai lớp ý nghĩa khác nhau.
+\end{remark}
+
+\section{\texorpdfstring{$\alpha$}{alpha}-cut và định lý biểu diễn}
+
+\begin{definition}
+Cho tập mờ \(A\) trên \(X\) và \(\alpha\in(0,1]\). \(\alpha\)-cut của \(A\) là tập kinh điển
+\[
+A_\alpha=\{x\in X:\mu_A(x)\ge \alpha\}.
+\]
+Người ta cũng dùng \emph{strong \(\alpha\)-cut}:
+\[
+A^\alpha=\{x\in X:\mu_A(x)>\alpha\}.
+\]
+\end{definition}
+
+\(\alpha\)-cut là một dụng cụ cực kỳ quan trọng vì nó biến một đối tượng mờ thành một họ tập kinh điển lồng nhau. Nói cách khác, thay vì nghĩ tập mờ như một bức tranh màu xám liên tục, ta có thể nghĩ nó như một chồng các ``mặt cắt sắc nét'' ứng với những mức khắt khe khác nhau.
+
+\begin{proposition}
+Nếu \(0<\alpha_1\le \alpha_2\le 1\) thì
+\[
+A_{\alpha_2}\subseteq A_{\alpha_1}.
+\]
+\end{proposition}
+
+\begin{proof}
+Lấy \(x\in A_{\alpha_2}\). Theo định nghĩa, \(\mu_A(x)\ge \alpha_2\). Vì \(\alpha_2\ge \alpha_1\), suy ra \(\mu_A(x)\ge \alpha_1\), nên \(x\in A_{\alpha_1}\).
+\end{proof}
+
+Tuy mệnh đề này đơn giản, nó có ý nghĩa lớn. Khi ngưỡng \(\alpha\) tăng lên, ta đang trở nên ``khắt khe'' hơn với câu hỏi ``phần tử này có thật sự thuộc khái niệm không''. Vì vậy, tập phần tử được chấp nhận phải nhỏ dần. Đây là lý do người ta thường xem một tập mờ như một họ tập kinh điển lồng nhau theo mức độ nghiêm ngặt.
+
+\begin{proposition}
+Với mọi \(x\in X\),
+\[
+\mu_A(x)=\sup\{\alpha\in(0,1]:x\in A_\alpha\}.
+\]
+\end{proposition}
+
+\begin{proof}
+Đặt
+\[
+s(x)=\sup\{\alpha\in(0,1]:x\in A_\alpha\}.
+\]
+Theo định nghĩa của \(A_\alpha\), điều kiện \(x\in A_\alpha\) tương đương \(\mu_A(x)\ge \alpha\). Do đó tập lấy supremum chính là khoảng \((0,\mu_A(x)]\) nếu \(\mu_A(x)>0\), hoặc rỗng nếu \(\mu_A(x)=0\). Trong cả hai trường hợp, supremum đều bằng \(\mu_A(x)\). Vậy \(s(x)=\mu_A(x)\).
+\end{proof}
+
+Kết quả trên nói rằng toàn bộ hàm thuộc có thể được phục hồi từ họ \(\alpha\)-cut. Đây chính là cơ sở của nhiều kỹ thuật tính toán trên số mờ: thay vì thao tác trực tiếp với hàm thuộc, ta thao tác trên các khoảng \(A_\alpha\), rồi ghép chúng lại.
+
+\section{Các phép toán trên tập mờ và vai trò của chuẩn tam giác}
+
+Trong tập kinh điển, hợp, giao và phủ định được mô tả bằng ba quy tắc rất quen:
+\[
+\chi_{A\cap B}(x)=\min\{\chi_A(x),\chi_B(x)\},
+\qquad
+\chi_{A\cup B}(x)=\max\{\chi_A(x),\chi_B(x)\},
+\qquad
+\chi_{\bar A}(x)=1-\chi_A(x).
+\]
+Khi đi sang tập mờ, ta có thể mở rộng trực tiếp ba công thức này thành:
+\[
+\mu_{A\cap B}(x)=\min\{\mu_A(x),\mu_B(x)\},
+\]
+\[
+\mu_{A\cup B}(x)=\max\{\mu_A(x),\mu_B(x)\},
+\]
+\[
+\mu_{\bar A}(x)=1-\mu_A(x).
+\]
+Đây là bộ toán tử mờ cổ điển của Zadeh. Nó đơn giản, dễ hiểu và có liên hệ rất chặt với logic kinh điển.
+
+Tuy nhiên, logic mờ không dừng ở một bộ toán tử duy nhất. Thay vì mặc định phép giao phải là \(\min\), ta tổng quát hóa bằng khái niệm \emph{T-norm} (triangular norm, chuẩn tam giác).
+
+\begin{definition}
+Một T-norm là một ánh xạ \(T:[0,1]^2\to[0,1]\) thỏa bốn tính chất:
+\begin{enumerate}
+\item giao hoán: \(T(a,b)=T(b,a)\);
+\item kết hợp: \(T(a,T(b,c))=T(T(a,b),c)\);
+\item đơn điệu: nếu \(a_1\le a_2\) và \(b_1\le b_2\) thì \(T(a_1,b_1)\le T(a_2,b_2)\);
+\item phần tử đơn vị: \(T(a,1)=a\).
+\end{enumerate}
+\end{definition}
+
+Các ví dụ quan trọng là
+\[
+T_{\min}(a,b)=\min(a,b),
+\qquad
+T_{\Pi}(a,b)=ab,
+\qquad
+T_{\mathrm{Luk}}(a,b)=\max(a+b-1,0).
+\]
+Mỗi T-norm tạo ra một cách hiểu khác nhau của từ ``và''. Với \(T_{\min}\), mệnh đề kết hợp đúng ở mức của mắt xích yếu nhất. Với \(T_{\Pi}\), mức đúng bị giảm theo kiểu nhân, nên việc cùng lúc có nhiều điều kiện chỉ hơi yếu cũng sẽ làm sức kích hoạt giảm đáng kể. Với chuẩn Lukasiewicz, ta cho phép một kiểu bù trừ hạn chế giữa các mức đúng.
+
+Tương tự, \emph{S-norm} (còn gọi là T-conorm) là phiên bản tổng quát cho phép ``hoặc''. Các ví dụ quan trọng là
+\[
+S_{\max}(a,b)=\max(a,b),
+\qquad
+S_{\mathrm{prob}}(a,b)=a+b-ab,
+\qquad
+S_{\mathrm{Luk}}(a,b)=\min(a+b,1).
+\]
+
+\begin{remark}
+Trong ANFIS và nhiều mạng mờ khả vi, người ta thường chọn \(T_{\Pi}(a,b)=ab\), tức chuẩn tam giác kiểu tích. Lý do không chỉ vì nó quen thuộc, mà còn vì nó trơn trên miền trong và tương thích tốt với lan truyền ngược.
+\end{remark}
+
+Với phủ định, lựa chọn phổ biến nhất là \emph{phủ định chuẩn}
+\[
+N(a)=1-a.
+\]
+Khi đi cùng \(T_{\min}\) và \(S_{\max}\), nó thỏa các luật De Morgan theo đúng hình thức cổ điển.
+
+\begin{proposition}
+Với \(N(a)=1-a\), \(T_{\min}(a,b)=\min(a,b)\), và \(S_{\max}(a,b)=\max(a,b)\), ta có
+\[
+N(T_{\min}(a,b))=S_{\max}(N(a),N(b)),
+\]
+\[
+N(S_{\max}(a,b))=T_{\min}(N(a),N(b)).
+\]
+\end{proposition}
+
+\begin{proof}
+Ta có
+\[
+N(T_{\min}(a,b))=1-\min(a,b)=\max(1-a,1-b)=S_{\max}(N(a),N(b)).
+\]
+Đẳng thức thứ hai chứng minh tương tự:
+\[
+N(S_{\max}(a,b))=1-\max(a,b)=\min(1-a,1-b)=T_{\min}(N(a),N(b)).
+\]
+\end{proof}
+
+Điều quan trọng ở đây không phải chỉ là vài công thức đại số. Khi chọn T-norm và S-norm, ta đang chọn \emph{ngữ nghĩa tính toán} cho cách các mức độ đúng tương tác với nhau. Vì vậy, nói ``dùng \(\min\) hay tích cũng được'' là một phát biểu quá hời hợt. Hai lựa chọn đó có thể dẫn tới hành vi suy diễn khác nhau rõ rệt.
+
+\section{Biến ngôn ngữ, phân hoạch mờ và quá trình mờ hóa}
+
+\emph{Biến ngôn ngữ} (linguistic variable) là một biến mà các ``giá trị'' của nó không phải chỉ là số, mà là những nhãn ngôn ngữ như \emph{thấp}, \emph{trung bình}, \emph{cao}. Mỗi nhãn ấy được gắn với một tập mờ trên miền giá trị của biến. Ví dụ, với biến ``mức biến động ngày'', ta có thể tạo ba nhãn
+\[
+\mathrm{THAP},\qquad \mathrm{TRUNG\ BINH},\qquad \mathrm{CAO}.
+\]
+Mỗi nhãn là một hàm thuộc khác nhau trên miền giá trị của tỷ suất biến động.
+
+Quá trình biến đổi một giá trị số sắc nét \(x\) thành các mức độ thuộc \(\mu_{\mathrm{THAP}}(x)\), \(\mu_{\mathrm{TRUNG\ BINH}}(x)\), \(\mu_{\mathrm{CAO}}(x)\) được gọi là \emph{mờ hóa} (fuzzification). Ta không mất dữ liệu gốc; ta chỉ biểu diễn lại dữ liệu trong một ngôn ngữ khác, gần với cách con người suy nghĩ hơn.
+
+Một khái niệm đặc biệt quan trọng là \emph{phân hoạch mờ} (fuzzy partition). Trên trực giác, đó là một họ nhãn mờ phủ lên miền giá trị sao cho mọi điểm đều được mô tả bởi một hoặc nhiều nhãn. Trong nhiều tài liệu, người ta thích một tính chất mạnh hơn, gọi là \emph{partition of unity} (phân hoạch có tổng bằng 1):
+\[
+\sum_{k=1}^m \mu_{A_k}(x)=1,\qquad \forall x\in X.
+\]
+Tính chất này không bắt buộc trong mọi hệ mờ, nhưng nó rất hữu ích vì giúp các nhãn hoạt động như một bộ tọa độ mềm trên miền giá trị.
+
+Người mới thường nghĩ rằng chỉ cần đặt vài hàm thuộc lên trục số là xong. Trên thực tế, một phân hoạch mờ tốt phải cân bằng ít nhất ba điều:
+\begin{enumerate}
+\item \textbf{độ phủ}: miền giá trị quan trọng phải thật sự được các nhãn chạm tới;
+\item \textbf{độ chồng lấp}: các nhãn lân cận phải giao thoa vừa đủ để suy luận mượt, nhưng không được chồng quá mức đến mức mất phân biệt;
+\item \textbf{tính diễn giải}: vị trí và độ rộng của các nhãn phải còn gắn với ngôn ngữ mà ta dùng.
+\end{enumerate}
+Nếu hàm thuộc quá hẹp, hệ thống gần như quay về phân loại cứng. Nếu quá rộng, mọi luật đều kích hoạt một chút và mô hình mất khả năng phân biệt.
+
+Trong các mô hình học được tham số, như ANFIS, vấn đề còn sâu hơn. Ban đầu ta có thể gọi hai nhãn là \emph{LOW} và \emph{HIGH}, nhưng nếu tâm của chúng bị đổi chỗ trong quá trình tối ưu mà không có ràng buộc thứ tự, thì nhãn ngôn ngữ sẽ mất nghĩa. Điều này sẽ trở lại như một điểm then chốt khi ta phân tích script ở chương sau.
+
+\section{Quan hệ mờ, phép hợp thành và suy luận nếu--thì}
+
+Cho hai miền \(X\) và \(Y\). Một \emph{quan hệ mờ} \(R\) từ \(X\) sang \(Y\) là một tập mờ trên tích Descartes \(X\times Y\), tức là một hàm
+\[
+\mu_R:X\times Y\to[0,1].
+\]
+Nếu \(R\) mã hóa mệnh đề ``nếu \(x\) lớn thì \(y\) cũng lớn'', thì \(\mu_R(x,y)\) đo mức độ mà cặp \((x,y)\) phù hợp với mệnh đề đó.
+
+Khi có hai quan hệ mờ \(R\subseteq X\times Y\) và \(S\subseteq Y\times Z\), ta có thể ghép chúng bằng \emph{phép hợp thành cực đại--cực tiểu} (max--min composition):
+\[
+\mu_{R\circ S}(x,z)=\sup_{y\in Y}\min\{\mu_R(x,y),\mu_S(y,z)\}.
+\]
+Nếu thay \(\min\) bằng một T-norm khác, ta thu được các họ hợp thành khác. Đây là khung nhìn quan hệ học của suy luận mờ.
+
+Ở tầng trực giác, công thức trên nói rằng: mức độ mà \(x\) liên hệ với \(z\) thông qua trung gian \(y\) được đo bằng cách, với từng \(y\), lấy mắt xích yếu hơn trong hai quan hệ; sau đó chọn con đường mạnh nhất trong số mọi \(y\). Điều này rất gần với trực giác ``suy luận dây chuyền''.
+
+Trong nhiều hệ thực hành, người ta không triển khai suy luận quan hệ một cách tổng quát như vậy, mà làm việc trực tiếp với các luật mờ dạng nếu--thì:
+\[
+\text{IF } x_1 \text{ is } A_1 \text{ AND } \cdots \text{ AND } x_d \text{ is } A_d
+\text{ THEN } y \text{ is } B.
+\]
+Hoặc trong hệ Sugeno:
+\[
+\text{IF } x_1 \text{ is } A_1 \text{ AND } \cdots \text{ AND } x_d \text{ is } A_d
+\text{ THEN } y = a_0 + a_1x_1+\cdots + a_dx_d.
+\]
+Khác biệt này rất quan trọng. Luật Mamdani có hệ quả là một tập mờ ngôn ngữ; luật Sugeno có hệ quả là một hàm số, thường tuyến tính. Vì thế Sugeno dễ ghép với tối ưu tham số hơn, còn Mamdani tự nhiên hơn về mặt diễn đạt ngôn ngữ.
+
+\section{Nguyên lý mở rộng và cách lan truyền độ mờ qua phép biến đổi}
+
+Nếu \(f:X\to Y\) là một ánh xạ kinh điển và \(A\) là một tập mờ trên \(X\), thì \emph{nguyên lý mở rộng} (extension principle) của Zadeh cho phép định nghĩa ảnh mờ của \(A\) qua \(f\):
+\[
+\mu_{f(A)}(y)=\sup_{x:f(x)=y}\mu_A(x).
+\]
+Đây là một công thức nền tảng. Nó nói rằng mức độ mà \(y\) thuộc ảnh của \(A\) được lấy bằng mức phù hợp lớn nhất trong số các điểm \(x\) ánh xạ tới \(y\).
+
+Tại sao công thức này quan trọng? Vì nó cho phép ta đưa các phép biến đổi thông thường của toán học sang thế giới mờ mà không phải định nghĩa lại từng phép một từ đầu. Nếu \(f(x)=2x+1\), hoặc \(f(x_1,x_2)=x_1+x_2\), hoặc \(f(x)=x^2\), nguyên lý mở rộng cho ta một cách có hệ thống để lan truyền độ mờ qua \(f\).
+
+Nhược điểm là công thức tổng quát này có thể khó tính toán trực tiếp. Đó là lý do \(\alpha\)-cut trở nên hữu ích. Với nhiều lớp số mờ trên \(\mathbb{R}\), đặc biệt là số mờ lồi và chuẩn hóa, ta có thể thực hiện phép toán bằng cách thao tác trên các khoảng của \(\alpha\)-cut. Chẳng hạn, nếu \(A_\alpha=[a_\alpha^-,a_\alpha^+]\) và \(B_\alpha=[b_\alpha^-,b_\alpha^+]\), thì
+\[
+(A+B)_\alpha = [a_\alpha^-+b_\alpha^-,\, a_\alpha^+ + b_\alpha^+].
+\]
+Kết quả này rất đẹp vì nó biến số mờ thành một họ khoảng và biến phép cộng mờ thành phép cộng khoảng.
+
+\begin{remark}
+Từ góc nhìn tính toán, \(\alpha\)-cut giống như một ngôn ngữ trung gian giữa tập mờ và giải tích khoảng. Đây là một trong những lý do khiến nhiều chứng minh trong lý thuyết số mờ được trình bày qua các mặt cắt \(\alpha\) thay vì trực tiếp qua hàm thuộc.
+\end{remark}
+
+\section{Số mờ, tính lồi và số học mờ}
+
+\begin{definition}
+Một \emph{số mờ} trên \(\mathbb{R}\) là một tập mờ \(A\) sao cho:
+\begin{enumerate}
+\item \(A\) chuẩn hóa, tức \(\sup_x \mu_A(x)=1\);
+\item \(A\) lồi theo nghĩa mờ, tức
+\[
+\mu_A(\lambda x+(1-\lambda)y)\ge \min\{\mu_A(x),\mu_A(y)\},
+\qquad \forall x,y\in\mathbb{R},\ \lambda\in[0,1];
+\]
+\item \(\mu_A\) nửa liên tục trên;
+\item miền đỡ của \(A\) là compact.
+\end{enumerate}
+\end{definition}
+
+Điều kiện lồi theo nghĩa mờ bảo đảm rằng mọi \(\alpha\)-cut của số mờ là một khoảng đóng. Đây là điểm làm số mờ trở nên tính toán được. Nếu các \(\alpha\)-cut là những tập rời rạc hoặc quá dị thường, việc tính toán sẽ rất khó kiểm soát.
+
+Hai ví dụ kinh điển là số mờ tam giác và số mờ hình thang. Chúng được ưa dùng trong các hệ chuyên gia và điều khiển cổ điển vì dễ khai báo bằng tay. Trong khi đó, số mờ Gaussian không phải lúc nào cũng có miền đỡ compact theo nghĩa chặt, nhưng lại rất hấp dẫn về mặt khả vi. Vì vậy, trong học máy, ta thường chấp nhận đánh đổi: bỏ một chút sạch sẽ của định nghĩa cổ điển để đổi lấy thuận lợi tối ưu.
+
+Số học mờ cho phép cộng, trừ, nhân, chia các đại lượng không sắc nét. Tuy nhiên, người học cần tránh một ngộ nhận phổ biến: số mờ không phải là ``số có sai số ngẫu nhiên''. Nó gần hơn với việc ``một đại lượng chưa được chốt sắc nét về khái niệm hoặc về nhận thức''. Có những ngữ cảnh mà xác suất thích hợp hơn; có những ngữ cảnh mà logic mờ thích hợp hơn; và cũng có những ngữ cảnh cần cả hai.
+
+\section{Logic mờ và xác suất: hai loại bất định khác nhau}
+
+Đây là chỗ người mới nhầm nhiều nhất, và nếu nhầm ở đây thì về sau rất dễ dùng sai mô hình. Xác suất mô tả mức độ tin vào một biến cố trong một không gian ngẫu nhiên. Logic mờ mô tả mức độ phù hợp của một đối tượng với một khái niệm có biên giới mềm. Một bên nói về \emph{liệu điều gì sẽ xảy ra}; bên kia nói về \emph{đối tượng hiện tại giống khái niệm đến mức nào}.
+
+Ví dụ, câu ``khả năng ngày mai mưa là 0.8'' là phát biểu xác suất. Câu ``nhiệt độ 31 độ C thuộc khái niệm `nóng' ở mức 0.8'' là phát biểu mờ. Hai câu đều dùng số 0.8, nhưng ý nghĩa của con số hoàn toàn khác. Nếu ta trộn chúng vào nhau chỉ vì cùng nằm trong đoạn \([0,1]\), ta sẽ suy luận sai.
+
+Sự khác nhau còn thể hiện ở câu hỏi nền. Xác suất hỏi: \emph{biến cố nào xảy ra trong thế giới ngẫu nhiên?} Logic mờ hỏi: \emph{khi một đối tượng đã quan sát được, nó phù hợp với nhãn ngôn ngữ đến mức nào?} Vì vậy, một đại lượng có thể rất mờ nhưng không ngẫu nhiên, và một biến cố có thể rất ngẫu nhiên nhưng không hề mờ.
+
+Điều đó không có nghĩa hai lý thuyết tách biệt hoàn toàn. Có những khung như \emph{possibility theory} (lý thuyết khả năng), có những mô hình xác suất--mờ, và có những hệ mờ xác suất. Nhưng để kết hợp được chúng một cách nghiêm túc, trước hết ta phải giữ ranh giới khái niệm rõ ràng. Nói ``membership 0.8 tức là xác suất 80\%'' gần như luôn là sai.
+
+\section{Giải mờ và quyết định cuối cùng}
+
+Nhiều hệ suy diễn mờ, đặc biệt là hệ Mamdani, sau khi tổng hợp các luật sẽ cho ra một tập mờ trên miền đầu ra. Muốn ra quyết định cuối cùng, ta cần chuyển đối tượng mờ ấy thành một giá trị sắc nét. Quá trình đó gọi là \emph{giải mờ} (defuzzification).
+
+Phương pháp nổi tiếng nhất là \emph{trọng tâm} (centroid):
+\[
+y^\star=\frac{\int y\,\mu_B(y)\,dy}{\int \mu_B(y)\,dy},
+\]
+với \(B\) là tập mờ đầu ra sau khi đã gộp các luật. Công thức này có trực giác khá đẹp: nó lấy ``trọng tâm khối lượng'' của hình do hàm thuộc đầu ra tạo ra. Tuy nhiên, tính toán có thể đắt nếu miền đầu ra phức tạp hoặc liên tục nhiều chiều.
+
+Các lựa chọn khác như \emph{mean of maxima} (trung bình các điểm cực đại), \emph{smallest of maxima}, \emph{largest of maxima} đơn giản hơn, nhưng lại nhạy cảm hơn với hình dạng đầu ra. Không có một cách giải mờ nào luôn thắng tuyệt đối; mỗi cách phản ánh một triết lý quyết định khác nhau.
+
+Trong hệ Sugeno, tình hình thuận lợi hơn. Nếu mỗi luật có hệ quả là một hằng số hoặc một hàm tuyến tính, đầu ra cuối thường có dạng trung bình có trọng số:
+\[
+y(x)=\frac{\sum_{i=1}^R w_i(x)f_i(x)}{\sum_{i=1}^R w_i(x)}.
+\]
+Vì vậy, bước giải mờ được tích hợp gần như ngay trong cấu trúc mô hình. Đây là lý do hệ Sugeno và ANFIS đặc biệt hợp với bài toán học tham số.
+
+\section{Tính diễn giải không tự sinh ra từ việc gắn nhãn LOW, HIGH}
+
+Trong văn liệu ứng dụng, người ta rất dễ dùng từ ``interpretable'' hay ``giải thích được'' khi thấy mô hình có luật mờ. Nhưng tính diễn giải là một thuộc tính khó hơn nhiều. Một hệ mờ chỉ thật sự dễ đọc khi ít nhất bốn điều kiện được giữ:
+\begin{enumerate}
+\item nhãn ngôn ngữ tương ứng với vị trí có ý nghĩa trên trục giá trị;
+\item các hàm thuộc đủ ít để con người còn theo dõi được;
+\item các luật không quá nhiều đến mức việc đọc luật trở thành hình thức;
+\item hệ quả của luật cũng được diễn đạt minh bạch, không chỉ tiền đề.
+\end{enumerate}
+
+Điều kiện thứ nhất đặc biệt dễ bị phá trong các mô hình học được tham số. Nếu hai Gaussian được khởi tạo là ``thấp'' và ``cao'' nhưng sau huấn luyện tâm bị đảo ngược, nhãn LOW/HIGH chỉ còn là nhãn chỉ số chứ không còn là nhãn ngôn ngữ. Khi ấy, in ra một luật như ``IF return is LOW'' có thể tạo ảo giác diễn giải trong khi ngữ nghĩa thật đã trượt khỏi chữ LOW.
+
+Điều kiện thứ ba cũng đáng lưu ý. Thêm nhiều hàm thuộc tưởng như giúp mô tả tinh hơn, nhưng số luật trong hệ lưới tăng theo cấp số mũ. Với \(d\) đặc trưng và \(m\) hàm thuộc mỗi đặc trưng, số luật là \(m^d\). Đây không phải chi tiết phụ; nó là ràng buộc cấu trúc của toàn bộ họ mô hình. Một mô hình có 6 đặc trưng và 3 hàm thuộc mỗi đặc trưng đã có \(3^6=729\) luật nếu dựng lưới đầy đủ. Con số ấy đã vượt xa khả năng đọc luật thủ công trong hầu hết bài toán thực.
+
+\section{Bài học chuyển tiếp sang ANFIS}
+
+Sau chương này, có ba ý tưởng mà ta cần mang theo sang chương về hệ suy diễn mờ và ANFIS.
+
+Thứ nhất, tập mờ là một ngôn ngữ cho \emph{độ phù hợp khái niệm}, không phải cho xác suất. Nếu quên điều đó, ta sẽ hiểu sai ý nghĩa của mọi hàm thuộc.
+
+Thứ hai, T-norm, S-norm, phân hoạch mờ, và \(\alpha\)-cut không phải các trang trí lý thuyết. Chúng quyết định cả ngữ nghĩa lẫn tính toán của hệ mờ. Một mô hình mờ tốt không thể được xây chỉ bằng cách đặt bừa vài Gaussian lên trục số.
+
+Thứ ba, tính diễn giải của một hệ mờ là một thành tựu mong manh. Nó cần được xây và được bảo vệ bằng cấu trúc của mô hình, chứ không tự sinh ra từ việc ta gắn cho hai đường cong cái tên \emph{LOW} và \emph{HIGH}. Bài học này sẽ trở nên đặc biệt quan trọng khi ta bước sang ANFIS và sau đó đọc một script cụ thể có quảng bá khả năng diễn giải.

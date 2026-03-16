@@ -1,17 +1,11 @@
-# Ignore everything
+# Bỏ qua tất cả các file và thư mục
 *
 
-# Whitelist code and documentation
+# Nhưng không bỏ qua các thư mục (để Git có thể đi vào tìm các file hợp lệ bên trong)
 !*/
-!*.py
-!*.ipynb
-!*.md
-!.gitignore
 
-# Explicitly ignore output directories and environments (safety net)
-outputs_*/
-__pycache__/
-*.keras
-*.h5
-.DS_Store
-.env
+# Không bỏ qua các file có định dạng cho phép và file .gitignore
+!.gitignore
+!*.py
+!*.tex
+!*.pdf

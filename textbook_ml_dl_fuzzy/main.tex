@@ -1,0 +1,126 @@
+\documentclass[12pt,a4paper,openany]{book}
+
+\usepackage[a4paper,margin=2.8cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\setsansfont{Arial}
+\setmonofont{Menlo}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{booktabs,longtable,array,multirow}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{setspace}
+\usepackage{csquotes}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{xcolor}
+
+\setstretch{1.15}
+\setlength{\parskip}{0.45em}
+\setlength{\parindent}{1.5em}
+\setlength{\headheight}{30pt}
+\setlist[itemize]{topsep=0.4em,itemsep=0.25em}
+\setlist[enumerate]{topsep=0.4em,itemsep=0.25em}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!50!black,
+    citecolor=blue!50!black,
+    urlcolor=blue!60!black,
+    pdftitle={Bài giảng ML, DL và Logic mờ},
+    pdfauthor={OpenAI Codex},
+    pdfsubject={Machine Learning, Deep Learning, Fuzzy Logic, ANFIS},
+    pdfkeywords={machine learning, deep learning, fuzzy logic, ANFIS, LSTM, time series}
+}
+
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\Huge}
+  {\filright\Large Chuong \thechapter}
+  {1ex}
+  {\titlerule\vspace{1ex}\filleft}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\thepage}
+\fancyhead[LO]{\nouppercase{\rightmark}}
+\fancyhead[RE]{\nouppercase{\leftmark}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Định nghĩa}[chapter]
+\newtheorem{example}[definition]{Ví dụ}
+\newtheorem{remark}[definition]{Nhận xét}
+\newtheorem{exercise}[definition]{Bài tập}
+
+\theoremstyle{plain}
+\newtheorem{theorem}[definition]{Định lý}
+\newtheorem{proposition}[definition]{Mệnh đề}
+\newtheorem{lemma}[definition]{Bổ đề}
+\newtheorem{corollary}[definition]{Hệ quả}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\KL}{\mathrm{KL}}
+\newcommand{\argmin}{\mathop{\mathrm{arg\,min}}}
+\newcommand{\argmax}{\mathop{\mathrm{arg\,max}}}
+\newcommand{\softmax}{\mathrm{softmax}}
+\newcommand{\sgn}{\mathrm{sign}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\trace}{\mathrm{tr}}
+\newcommand{\mse}{\mathrm{MSE}}
+\newcommand{\relu}{\mathrm{ReLU}}
+\newcommand{\sigmoid}{\mathrm{sigmoid}}
+\newcommand{\tanhf}{\mathrm{tanh}}
+
+\begin{document}
+
+\frontmatter
+
+\begin{titlepage}
+    \centering
+    {\Huge\bfseries Bài giảng chi tiết về Machine Learning, Deep Learning và Logic mờ\par}
+    \vspace{1.5cm}
+    {\Large Từ nền tảng toán học đến ANFIS và phân tích mô hình trong \texttt{run\_feature\_group\_anfis.py}\par}
+    \vspace{1.8cm}
+    {\large Biên soạn cho người mới bắt đầu, nhưng giữ mức độ lập luận toán học chặt chẽ\par}
+    \vfill
+    {\large OpenAI Codex\par}
+    {\large Ngày biên soạn: 13/03/2026\par}
+    \vfill
+    \begin{minipage}{0.88\textwidth}
+    Tài liệu này được viết dưới dạng một bộ bài giảng có chủ đích giảng dạy, không phải một mục lục mở rộng. Mục tiêu là xây dựng một đường dây nhận thức liên tục: từ cách đặt bài toán học máy, đến nền tảng xác suất -- tối ưu, đến các mô hình học máy cổ điển, mạng nơ-ron sâu, logic mờ, hệ suy diễn mờ Takagi--Sugeno, ANFIS, và cuối cùng là đọc, giải cấu trúc, phân tích lỗi, và đánh giá hệ quả của mô hình cụ thể trong \texttt{run\_feature\_group\_anfis.py}.
+    \end{minipage}
+\end{titlepage}
+
+\input{chapters/00_preface.tex}
+
+\tableofcontents
+
+\mainmatter
+
+\input{chapters/01_overview.tex}
+\input{chapters/02_math_foundations.tex}
+\input{chapters/03_statistical_learning.tex}
+\input{chapters/04_classical_models.tex}
+\input{chapters/05_neural_networks.tex}
+\input{chapters/06_deep_learning_practice.tex}
+\input{chapters/07_time_series.tex}
+\input{chapters/08_fuzzy_sets.tex}
+\input{chapters/09_fuzzy_inference.tex}
+\input{chapters/10_anfis.tex}
+\input{chapters/11_run_feature_group_anfis_analysis.tex}
+\input{chapters/12_conclusion_and_exercises.tex}
+\input{chapters/13_appendix_worked_examples.tex}
+\input{chapters/14_common_misconceptions.tex}
+
+\backmatter
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

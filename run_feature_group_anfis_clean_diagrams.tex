@@ -1,0 +1,374 @@
+\documentclass[11pt,a4paper,landscape]{article}
+\usepackage[margin=1.2cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc,backgrounds,shapes.multipart}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+
+\definecolor{inputblue}{HTML}{DCEBFF}
+\definecolor{fuzzygreen}{HTML}{DDF5E3}
+\definecolor{seqorange}{HTML}{FDE7C8}
+\definecolor{mixpurple}{HTML}{E9DDF8}
+\definecolor{outred}{HTML}{FADBDD}
+\definecolor{notegray}{HTML}{F3F4F6}
+\definecolor{linegray}{HTML}{4B5563}
+\definecolor{titleblue}{HTML}{1F4E79}
+
+\tikzset{
+  >={Latex[length=3mm,width=2mm]},
+  line/.style={draw=linegray, -Latex, line width=0.9pt},
+  dashedline/.style={draw=linegray, -Latex, line width=0.8pt, dashed},
+  box/.style={
+    draw=linegray,
+    rounded corners=2mm,
+    align=center,
+    minimum height=11mm,
+    minimum width=28mm,
+    font=\small,
+    inner sep=4pt
+  },
+  smallbox/.style={
+    draw=linegray,
+    rounded corners=1.5mm,
+    align=center,
+    minimum height=9mm,
+    minimum width=24mm,
+    font=\footnotesize,
+    inner sep=3pt
+  },
+  groupbox/.style={
+    draw=linegray,
+    rounded corners=2.5mm,
+    inner sep=6pt,
+    fill=white
+  },
+  note/.style={
+    draw=linegray,
+    rounded corners=2mm,
+    fill=notegray,
+    align=left,
+    font=\footnotesize,
+    inner sep=5pt,
+    text width=9.2cm
+  }
+}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries\color{titleblue} Sơ đồ tổng quan mô hình \texttt{run\_feature\_group\_anfis\_clean.py}}\\[0.6em]
+{\large Kiến trúc hai nhánh: ANFIS theo nhóm đặc trưng + BiLSTM theo chuỗi}
+\end{center}
+
+\begin{center}
+\resizebox{0.98\linewidth}{!}{
+\begin{tikzpicture}[node distance=8mm and 9mm]
+  \node[box, fill=inputblue, minimum width=38mm] (input) at (0,0)
+    {Đầu vào chuỗi\\\texttt{sequence\_input}\\$(B,\;look\_back,\;n\_seq\_features)$};
+
+  \node[box, fill=fuzzygreen, minimum width=34mm] (lastcore) at (5.0,2.0)
+    {Lấy bước cuối\\của 6 đặc trưng lõi\\\texttt{last\_core\_features}};
+  \node[smallbox, fill=fuzzygreen, minimum width=31mm] (returns) at (9.4,3.1)
+    {\texttt{returns\_slice}\\4 đặc trưng:\\\texttt{close\_ret}, \texttt{open\_gap},\\\texttt{high\_buffer}, \texttt{low\_buffer}};
+  \node[smallbox, fill=fuzzygreen, minimum width=31mm] (indicators) at (9.4,0.9)
+    {\texttt{indicator\_slice}\\2 đặc trưng:\\\texttt{range\_pct}, \texttt{volume\_ret}};
+  \node[smallbox, fill=fuzzygreen, minimum width=27mm] (anfisr) at (13.5,3.1)
+    {\texttt{ANFIS returns}\\\texttt{output\_dim = 4}\\số luật $= n\_mfs^4$};
+  \node[smallbox, fill=fuzzygreen, minimum width=27mm] (anfisi) at (13.5,0.9)
+    {\texttt{ANFIS indicators}\\\texttt{output\_dim = 4}\\số luật $= n\_mfs^2$};
+  \node[box, fill=fuzzygreen, minimum width=27mm] (fconcat) at (17.4,2.0)
+    {\texttt{fuzzy\_concat}};
+  \node[smallbox, fill=fuzzygreen] (fhidden) at (20.8,2.0)
+    {\texttt{Dense(16, tanh)}\\\texttt{fuzzy\_hidden}};
+  \node[smallbox, fill=fuzzygreen] (fraw) at (24.1,2.0)
+    {\texttt{Dense(4)}\\\texttt{fuzzy\_raw\_params}};
+
+  \node[smallbox, fill=seqorange, minimum width=25mm] (bilstm1) at (5.2,-2.2)
+    {\texttt{BiLSTM 1}\\\texttt{return\_sequences=True}};
+  \node[smallbox, fill=seqorange] (drop1) at (8.5,-2.2)
+    {\texttt{Dropout}};
+  \node[smallbox, fill=seqorange] (bilstm2) at (11.5,-2.2)
+    {\texttt{BiLSTM 2}};
+  \node[smallbox, fill=seqorange] (drop2) at (14.4,-2.2)
+    {\texttt{Dropout}};
+  \node[smallbox, fill=seqorange] (shidden) at (17.6,-2.2)
+    {\texttt{Dense(16, relu)}\\\texttt{sequence\_hidden}};
+  \node[smallbox, fill=seqorange] (sraw) at (21.2,-2.2)
+    {\texttt{Dense(4)}\\\texttt{sequence\_residual\_params}};
+
+  \node[box, fill=mixpurple, minimum width=29mm] (add) at (27.8,0.0)
+    {\texttt{raw\_target\_params}\\=\texttt{fuzzy\_raw} + \texttt{sequence\_raw}};
+
+  \node[smallbox, fill=outred, minimum width=27mm] (close) at (32.6,2.6)
+    {\texttt{close\_ret\_output}\\$RETURN\_CLIP \cdot \tanh(z_0)$};
+  \node[smallbox, fill=outred, minimum width=27mm] (open) at (32.6,0.8)
+    {\texttt{open\_gap\_output}\\$RETURN\_CLIP \cdot \tanh(z_1)$};
+  \node[smallbox, fill=outred, minimum width=27mm] (high) at (32.6,-1.0)
+    {\texttt{high\_buffer\_output}\\$BUFFER\_CLIP \cdot \sigma(z_2)$};
+  \node[smallbox, fill=outred, minimum width=27mm] (low) at (32.6,-2.8)
+    {\texttt{low\_buffer\_output}\\$BUFFER\_CLIP \cdot \sigma(z_3)$};
+  \node[box, fill=outred, minimum width=31mm] (target) at (37.0,0.0)
+    {\texttt{target\_output}\\$(close\_ret,\;open\_gap,$\\$high\_buffer,\;low\_buffer)$};
+  \node[box, fill=outred, minimum width=33mm] (recon) at (41.9,0.0)
+    {Dựng lại OHLC hợp lệ\\\texttt{reconstruct\_ohlc(...)}};
+
+  \draw[line] (input) -- (lastcore);
+  \draw[line] (lastcore) -- (returns);
+  \draw[line] (lastcore) -- (indicators);
+  \draw[line] (returns) -- (anfisr);
+  \draw[line] (indicators) -- (anfisi);
+  \draw[line] (anfisr) -- (fconcat);
+  \draw[line] (anfisi) -- (fconcat);
+  \draw[line] (fconcat) -- (fhidden);
+  \draw[line] (fhidden) -- (fraw);
+
+  \draw[line] (input) -- (bilstm1);
+  \draw[line] (bilstm1) -- (drop1);
+  \draw[line] (drop1) -- (bilstm2);
+  \draw[line] (bilstm2) -- (drop2);
+  \draw[line] (drop2) -- (shidden);
+  \draw[line] (shidden) -- (sraw);
+
+  \draw[line] (fraw) -- (add);
+  \draw[line] (sraw) -- (add);
+  \draw[line] (add) -- (close);
+  \draw[line] (add) -- (open);
+  \draw[line] (add) -- (high);
+  \draw[line] (add) -- (low);
+  \draw[line] (close) -- (target);
+  \draw[line] (open) -- (target);
+  \draw[line] (high) -- (target);
+  \draw[line] (low) -- (target);
+  \draw[line] (target) -- (recon);
+
+  \node[note] at (20.7,-5.5) {
+    \textbf{Ý tưởng chính:}\\
+    Nhánh mờ học một tiên nghiệm có cấu trúc từ 6 đặc trưng lõi dễ diễn giải.\\
+    Nhánh BiLSTM học phần hiệu chỉnh theo chuỗi thời gian còn thiếu.\\
+    Hai nhánh được cộng ở mức \texttt{raw\_target\_params}, rồi 4 đầu ra cuối bị chặn về miền hợp lệ trước khi dựng lại OHLC.
+  };
+\end{tikzpicture}
+}
+\end{center}
+
+\newpage
+
+\begin{center}
+{\LARGE\bfseries\color{titleblue} Sơ đồ chi tiết từ dữ liệu đến dự báo}\\[0.6em]
+{\large Bản chi tiết bám sát các hàm \texttt{engineer\_features}, \texttt{build\_windows}, \texttt{build\_model}, \texttt{reconstruct\_ohlc}}
+\end{center}
+
+\begin{center}
+\resizebox{0.99\linewidth}{!}{
+\begin{tikzpicture}[node distance=7mm and 8mm]
+  % preprocessing
+  \node[box, fill=inputblue, minimum width=31mm] (csv) at (0,0) {CSV trong\\\texttt{Dataset/}};
+  \node[smallbox, fill=inputblue, minimum width=34mm] (load) at (4.3,0)
+    {\texttt{load\_market\_dataframe}\\- kiểm tra OHLC\\- parse \texttt{Date}\\- sort thời gian};
+  \node[smallbox, fill=inputblue, minimum width=36mm] (feat) at (9.6,0)
+    {\texttt{engineer\_features}\\- 6 đặc trưng lõi\\- 4 mục tiêu tham số hóa\\- lưu \texttt{next\_OHLC} thật};
+  \node[smallbox, fill=inputblue, minimum width=39mm] (windows) at (15.6,0)
+    {\texttt{build\_windows}\\- rolling windows\\- chia train/val/test theo thời gian\\- fit scaler chỉ trên train};
+
+  % tensor summary
+  \node[box, fill=inputblue, minimum width=39mm] (tensor) at (21.7,0)
+    {Tensor đầu vào mô hình\\$X \in \mathbb{R}^{B \times T \times F}$\\và mục tiêu $y \in \mathbb{R}^{B \times 4}$};
+
+  % fuzzy branch
+  \node[groupbox, fit={(24.4,3.7) (38.2,9.8)}, label={[font=\bfseries\small]north west:Nhánh mờ}] (fuzzygroup) {};
+  \node[smallbox, fill=fuzzygreen, minimum width=29mm] (last) at (26.6,8.3)
+    {\texttt{last\_core\_features}\\$x[:, -1, :6]$};
+  \node[smallbox, fill=fuzzygreen, minimum width=27mm] (rslice) at (31.1,9.0)
+    {\texttt{returns\_slice}\\4 đặc trưng};
+  \node[smallbox, fill=fuzzygreen, minimum width=27mm] (islice) at (31.1,7.0)
+    {\texttt{indicator\_slice}\\2 đặc trưng};
+  \node[smallbox, fill=fuzzygreen, minimum width=27mm] (ranfis) at (35.6,9.0)
+    {\texttt{anfis\_returns}\\ra 4 chiều ẩn};
+  \node[smallbox, fill=fuzzygreen, minimum width=27mm] (ianfis) at (35.6,7.0)
+    {\texttt{anfis\_indicators}\\ra 4 chiều ẩn};
+  \node[smallbox, fill=fuzzygreen, minimum width=26mm] (fcat) at (40.0,8.0)
+    {\texttt{fuzzy\_concat}};
+  \node[smallbox, fill=fuzzygreen, minimum width=26mm] (fdense) at (44.0,8.0)
+    {\texttt{Dense(16, tanh)}};
+  \node[smallbox, fill=fuzzygreen, minimum width=28mm] (fout) at (48.2,8.0)
+    {\texttt{fuzzy\_raw\_params}\\$(B,4)$};
+
+  % sequence branch
+  \node[groupbox, fit={(24.4,-0.8) (41.4,4.2)}, label={[font=\bfseries\small]north west:Nhánh chuỗi}] (seqgroup) {};
+  \node[smallbox, fill=seqorange, minimum width=26mm] (seqin) at (26.5,1.8)
+    {\texttt{sequence\_input}\\toàn bộ cửa sổ};
+  \node[smallbox, fill=seqorange, minimum width=24mm] (b1) at (30.3,1.8)
+    {\texttt{BiLSTM 1}};
+  \node[smallbox, fill=seqorange, minimum width=20mm] (d1) at (33.4,1.8)
+    {\texttt{Dropout}};
+  \node[smallbox, fill=seqorange, minimum width=24mm] (b2) at (36.3,1.8)
+    {\texttt{BiLSTM 2}};
+  \node[smallbox, fill=seqorange, minimum width=20mm] (d2) at (39.2,1.8)
+    {\texttt{Dropout}};
+  \node[smallbox, fill=seqorange, minimum width=28mm] (sdense) at (43.0,1.8)
+    {\texttt{Dense(16, relu)}};
+  \node[smallbox, fill=seqorange, minimum width=30mm] (sout) at (47.5,1.8)
+    {\texttt{sequence\_residual\_params}\\$(B,4)$};
+
+  % merge and outputs
+  \node[groupbox, fit={(50.0,-0.8) (67.0,9.6)}, label={[font=\bfseries\small]north west:Kết hợp và đầu ra}] (mergegroup) {};
+  \node[smallbox, fill=mixpurple, minimum width=30mm] (raw) at (53.1,4.8)
+    {\texttt{raw\_target\_params}\\$=$ nhánh mờ + nhánh chuỗi};
+  \node[smallbox, fill=outred, minimum width=24mm] (c1) at (57.6,7.7)
+    {\texttt{close\_ret}\\$\tanh$};
+  \node[smallbox, fill=outred, minimum width=24mm] (c2) at (57.6,5.8)
+    {\texttt{open\_gap}\\$\tanh$};
+  \node[smallbox, fill=outred, minimum width=24mm] (c3) at (57.6,3.9)
+    {\texttt{high\_buffer}\\$\sigma$};
+  \node[smallbox, fill=outred, minimum width=24mm] (c4) at (57.6,2.0)
+    {\texttt{low\_buffer}\\$\sigma$};
+  \node[smallbox, fill=outred, minimum width=30mm] (tout) at (62.2,4.8)
+    {\texttt{target\_output}\\$(B,4)$};
+  \node[smallbox, fill=outred, minimum width=33mm] (rohlc) at (66.2,4.8)
+    {\texttt{reconstruct\_ohlc}\\dựng giá OHLC hợp lệ};
+
+  % formulas
+  \node[note] (formula) at (57.5,-3.2) {
+    \textbf{Công thức dựng lại giá:}\\
+    $pred\_close = current\_close \cdot (1 + close\_ret)$\\
+    $pred\_open = current\_close \cdot (1 + open\_gap)$\\
+    $body\_high = \max(pred\_open, pred\_close)$\\
+    $body\_low = \min(pred\_open, pred\_close)$\\
+    $pred\_high = body\_high \cdot e^{high\_buffer}$\\
+    $pred\_low = body\_low \cdot e^{-low\_buffer}$
+  };
+
+  \node[note, text width=7.9cm] (guarantee) at (67.6,-3.2) {
+    \textbf{Hệ quả cấu trúc:}\\
+    Mô hình mới không dự đoán trực tiếp 4 giá độc lập.\\
+    Vì vậy luôn có:\\
+    $pred\_high \ge \max(pred\_open, pred\_close)$\\
+    $pred\_low \le \min(pred\_open, pred\_close)$
+  };
+
+  % decompose model note
+  \node[note, text width=11.0cm] (decomp) at (31.0,-3.2) {
+    \textbf{Khối giải thích nội bộ \texttt{decompose\_model}:}\\
+    Khi cần phân tích một mẫu dữ liệu, mô hình phụ này phơi bày đồng thời:\\
+    1. \texttt{fuzzy\_raw\_params}\\
+    2. \texttt{sequence\_residual\_params}\\
+    3. \texttt{target\_output}\\
+    Nhờ vậy ta nhìn thấy rõ nhánh mờ đóng góp gì và nhánh chuỗi đang sửa phần nào.
+  };
+
+  % arrows
+  \draw[line] (csv) -- (load);
+  \draw[line] (load) -- (feat);
+  \draw[line] (feat) -- (windows);
+  \draw[line] (windows) -- (tensor);
+
+  \draw[line] (tensor) -- (last);
+  \draw[line] (tensor) -- (seqin);
+
+  \draw[line] (last) -- (rslice);
+  \draw[line] (last) -- (islice);
+  \draw[line] (rslice) -- (ranfis);
+  \draw[line] (islice) -- (ianfis);
+  \draw[line] (ranfis) -- (fcat);
+  \draw[line] (ianfis) -- (fcat);
+  \draw[line] (fcat) -- (fdense);
+  \draw[line] (fdense) -- (fout);
+
+  \draw[line] (seqin) -- (b1);
+  \draw[line] (b1) -- (d1);
+  \draw[line] (d1) -- (b2);
+  \draw[line] (b2) -- (d2);
+  \draw[line] (d2) -- (sdense);
+  \draw[line] (sdense) -- (sout);
+
+  \draw[line] (fout) -- (raw);
+  \draw[line] (sout) -- (raw);
+  \draw[line] (raw) -- (c1);
+  \draw[line] (raw) -- (c2);
+  \draw[line] (raw) -- (c3);
+  \draw[line] (raw) -- (c4);
+  \draw[line] (c1) -- (tout);
+  \draw[line] (c2) -- (tout);
+  \draw[line] (c3) -- (tout);
+  \draw[line] (c4) -- (tout);
+  \draw[line] (tout) -- (rohlc);
+\end{tikzpicture}
+}
+\end{center}
+
+\newpage
+
+\begin{center}
+{\LARGE\bfseries\color{titleblue} Sơ đồ chi tiết bên trong một khối \texttt{OrderedFeatureGroupANFIS}}\\[0.6em]
+{\large Cấu trúc mà hai khối \texttt{anfis\_returns} và \texttt{anfis\_indicators} cùng dùng}
+\end{center}
+
+\begin{center}
+\resizebox{0.95\linewidth}{!}{
+\begin{tikzpicture}[node distance=8mm and 9mm]
+  \node[box, fill=inputblue, minimum width=35mm] (inputa) at (0,0)
+    {Đầu vào cục bộ\\\texttt{inputs}\\$(B,\;n\_features)$};
+
+  \node[smallbox, fill=fuzzygreen, minimum width=33mm] (centers) at (5.0,2.0)
+    {Tâm có thứ tự\\\texttt{center\_base}\\$+$ \texttt{softplus(center\_delta\_raw)}};
+  \node[smallbox, fill=fuzzygreen, minimum width=33mm] (widths) at (5.0,-2.0)
+    {Độ rộng Gaussian dương\\\texttt{softplus(width\_raw)}};
+  \node[box, fill=fuzzygreen, minimum width=34mm] (fuzz) at (10.0,0.0)
+    {Mờ hóa Gaussian\\\texttt{memberships[b, i, j]}};
+
+  \node[smallbox, fill=fuzzygreen, minimum width=31mm] (indices) at (15.0,2.2)
+    {\texttt{rule\_mf\_indices}\\luật nào dùng\\hàm thuộc nào};
+  \node[box, fill=fuzzygreen, minimum width=34mm] (firing) at (15.0,-0.4)
+    {Cường độ kích hoạt luật\\\texttt{firing}};
+  \node[smallbox, fill=fuzzygreen, minimum width=30mm] (norm) at (20.0,-0.4)
+    {Chuẩn hóa\\\texttt{firing\_norm}};
+
+  \node[smallbox, fill=mixpurple, minimum width=34mm] (cons) at (20.0,3.0)
+    {Hệ quả Sugeno\\\texttt{rule\_output}\\$= bias + \sum coeff_i x_i$};
+  \node[box, fill=mixpurple, minimum width=35mm] (weighted) at (25.1,1.3)
+    {Cộng có trọng số\\$\sum firing\_norm \cdot rule\_output$};
+  \node[box, fill=outred, minimum width=34mm] (out) at (30.0,1.3)
+    {Đầu ra ẩn của khối ANFIS\\$(B,\;output\_dim)$};
+
+  \node[note, text width=12.0cm] (logic) at (16.0,-4.6) {
+    \textbf{Diễn giải toán học:}\\
+    Mỗi đặc trưng được mờ hóa bằng nhiều hàm thuộc Gaussian.\\
+    Mỗi luật chọn đúng một hàm thuộc trên mỗi đặc trưng, rồi lấy tích để tạo cường độ kích hoạt.\\
+    Sau khi chuẩn hóa, mỗi luật sinh ra một hệ quả affine kiểu Sugeno.\\
+    Đầu ra cuối cùng của khối là tổng có trọng số của tất cả các hệ quả luật.
+  };
+
+  \node[note, text width=10.8cm] (count) at (30.3,-4.6) {
+    \textbf{Số luật:}\\
+    Nếu một khối có \texttt{n\_features} đầu vào và mỗi đầu vào có \texttt{n\_mfs} hàm thuộc thì:\\[0.2em]
+    \[
+      n\_rules = n\_mfs^{\,n\_features}
+    \]
+    Ví dụ:\\
+    - \texttt{anfis\_returns}: $n\_features = 4 \Rightarrow n\_rules = n\_mfs^4$\\
+    - \texttt{anfis\_indicators}: $n\_features = 2 \Rightarrow n\_rules = n\_mfs^2$
+  };
+
+  \draw[line] (inputa) -- (fuzz);
+  \draw[line] (centers) -- (fuzz);
+  \draw[line] (widths) -- (fuzz);
+  \draw[line] (fuzz) -- (firing);
+  \draw[line] (indices) -- (firing);
+  \draw[line] (firing) -- (norm);
+  \draw[line] (inputa) |- (cons);
+  \draw[line] (norm) -- (weighted);
+  \draw[line] (cons) -- (weighted);
+  \draw[line] (weighted) -- (out);
+\end{tikzpicture}
+}
+\end{center}
+
+\end{document}

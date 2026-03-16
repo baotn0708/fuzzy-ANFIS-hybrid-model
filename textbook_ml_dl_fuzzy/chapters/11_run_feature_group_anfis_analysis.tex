@@ -1,0 +1,282 @@
+\chapter{Phân tích lý thuyết và kiểm toán kỹ thuật file \texttt{run\_feature\_group\_anfis.py}}
+
+\section{Phải đọc chương này như thế nào để không rơi vào suy diễn cảm tính}
+
+Khi phân tích một script học máy có tên gọi hấp dẫn như ``Feature-Group ANFIS + BiLSTM'', người đọc rất dễ trượt vào một trong hai cực đoan. Cực đoan thứ nhất là tin ngay vào tên gọi và các chỉ số được in ra, từ đó xem mô hình như một thành công đã hoàn tất. Cực đoan thứ hai là thấy vài chỗ lạ rồi kết luận toàn bộ mô hình vô nghĩa. Cả hai đều là cách đọc hời hợt. Mục tiêu của chương này là dựng lại một kỷ luật đọc nghiêm túc hơn.
+
+Kỷ luật đó có ba tầng. Tầng thứ nhất là \emph{tầng xác nhận trực tiếp}: điều gì ta đọc được thẳng từ mã nguồn, không cần chạy huấn luyện, không cần suy đoán thêm. Tầng thứ hai là \emph{tầng hệ quả logic}: từ những gì code làm, điều gì kéo theo một cách tất yếu về mặt toán học hoặc phương pháp luận. Tầng thứ ba là \emph{tầng rủi ro hợp lý}: những điểm chưa thể kết luận cứng nếu không có thực nghiệm, nhưng có lý do vững để cảnh báo. Nếu không phân biệt ba tầng này, việc ``phân tích'' sẽ nhanh chóng trở thành một bài văn kết tội hoặc ca ngợi theo cảm xúc.
+
+Từ việc đọc trực tiếp file \texttt{run\_feature\_group\_anfis.py}, ta có thể xác nhận ít nhất các sự kiện sau đây.
+\begin{enumerate}
+\item Script tạo 6 đặc trưng đầu vào: \texttt{Close\_ret}, \texttt{Open\_ret}, \texttt{High\_ret}, \texttt{Low\_ret}, \texttt{range\_pct}, \texttt{gap}.
+\item Script tạo 4 biến mục tiêu: \texttt{target\_Close\_ret}, \texttt{target\_Open\_ret}, \texttt{target\_High\_ret}, \texttt{target\_Low\_ret}.
+\item Hai nhánh ANFIS chỉ nhìn \emph{last timestep} của cửa sổ, còn nhánh BiLSTM nhìn toàn bộ chuỗi con dài 60 bước.
+\item \texttt{StandardScaler} được \texttt{fit\_transform} trên toàn bộ \texttt{features} và \texttt{targets} trước khi tách train/test.
+\item Trong lúc huấn luyện, \texttt{validation\_data=(d['X\_test'], d['y\_test'])} được dùng trực tiếp trong \texttt{model.fit}.
+\item Nếu có nhiều lần chạy, script chọn mô hình tốt nhất bằng chỉ số trên chính tập test.
+\item Hàm \texttt{extract\_rules} chỉ in phần tiền đề của luật, không in hệ số hệ quả.
+\item Script mã hóa cứng \texttt{base\_dir = '/Users/bao/Documents/tsa\_paper\_1'}, khác với workspace hiện tại.
+\end{enumerate}
+
+Những mệnh đề trên không còn là chuyện quan điểm. Chúng là dữ kiện. Toàn bộ phần còn lại của chương này sẽ dựa trên các dữ kiện đó, chứ không xây trên tưởng tượng.
+
+\section{Bài toán toán học mà script thực sự đang giải là gì}
+
+Muốn đánh giá một mô hình, trước hết ta phải dựng lại chính xác bài toán mà nó đang học. Chỉ nhìn tên biến là chưa đủ, vì tên biến có thể gợi ý một ý nghĩa khác với công thức thật. Trong \texttt{prepare\_data}, script tạo các đặc trưng đầu vào
+\[
+\text{Close\_ret}_t=\frac{C_t}{C_{t-1}}-1,\qquad
+\text{Open\_ret}_t=\frac{O_t}{O_{t-1}}-1,
+\]
+\[
+\text{High\_ret}_t=\frac{H_t}{H_{t-1}}-1,\qquad
+\text{Low\_ret}_t=\frac{L_t}{L_{t-1}}-1,
+\]
+\[
+\text{range\_pct}_t=\frac{H_t-L_t}{C_t},
+\qquad
+\text{gap}_t=\frac{O_t-C_{t-1}}{C_{t-1}}.
+\]
+Các đặc trưng này, xét riêng từng công thức, đều là đại lượng có thể biết được tại thời điểm cuối ngày \(t\). Vì vậy, nếu chỉ xét phần tạo đặc trưng, ta chưa có rò rỉ trực tiếp từ tương lai.
+
+Điểm tinh tế hơn nằm ở phần mục tiêu. Script định nghĩa
+\[
+\text{target\_Close\_ret}_t=\frac{C_{t+1}}{C_t}-1,
+\]
+\[
+\text{target\_Open\_ret}_t=\frac{O_{t+1}}{C_t}-1,\qquad
+\text{target\_High\_ret}_t=\frac{H_{t+1}}{C_t}-1,\qquad
+\text{target\_Low\_ret}_t=\frac{L_{t+1}}{C_t}-1.
+\]
+Nói bằng lời, mô hình không học ``return của Open ngày mai so với Open hôm nay'' và cũng không học ``return của High ngày mai so với High hôm nay''. Nó học các giá trị OHLC của ngày mai nhưng tất cả đều được chuẩn hóa tương đối theo \(C_t\), tức giá đóng cửa hôm nay.
+
+Chi tiết này dẫn tới một kiểm tra rất nhỏ nhưng cực kỳ quan trọng. Nếu \(\widehat r_t^{(O)}\) là dự báo cho \(\text{target\_Open\_ret}_t\), thì
+\[
+\widehat O_{t+1}=C_t(1+\widehat r_t^{(O)}).
+\]
+Hoàn toàn tương tự,
+\[
+\widehat H_{t+1}=C_t(1+\widehat r_t^{(H)}),
+\qquad
+\widehat L_{t+1}=C_t(1+\widehat r_t^{(L)}).
+\]
+Vì vậy, việc script dùng \texttt{current\_close} để biến toàn bộ bốn đầu ra từ return về price là \emph{nhất quán với chính định nghĩa mục tiêu mà script đã chọn}. Đây là chỗ rất dễ bị cáo buộc oan. Nếu không đọc kỹ công thức, người ta sẽ thấy dòng
+\[
+\texttt{pred\_px = current\_close * (1 + pred\_ret)}
+\]
+rồi kết luận ngay ``sai vì Open/High/Low phải dùng giá riêng của chúng''. Kết luận ấy nghe hợp trực giác, nhưng lại không đúng với bài toán mà code thực sự đang tối ưu.
+
+Điều cần nói công bằng hơn là: định nghĩa mục tiêu này hơi lạ và làm ngữ nghĩa đầu vào--đầu ra kém trong suốt hơn, nhưng bản thân phép quy đổi về price không phải là bug tính toán. Sự phân biệt giữa ``ngữ nghĩa hơi lạ'' và ``tính toán sai'' không phải chuyện chữ nghĩa; nó là tiêu chuẩn trung thực khi đọc code.
+
+Một điểm kỹ thuật khác cũng nên được dựng lại cẩn thận là cấu trúc cửa sổ thời gian. Script dùng cửa sổ dài \(L=60\) và, với mỗi chỉ số \(i\), lấy đoạn \([i-L+1,\dots,i]\) để dự báo mục tiêu tại chính chỉ số \(i\), tức dự báo từ thời điểm \(t=i\) sang \(t+1\). Đây là một lựa chọn hợp lý: mọi đặc trưng trong cửa sổ đều đã biết tại lúc ta muốn dự báo ngày tiếp theo. Tuy nhiên, vòng lặp lại bắt đầu từ \texttt{i = look\_back} thay vì chỉ số đầu tiên hợp lệ \(\texttt{look\_back}-1\). Hệ quả là mô hình bỏ phí đúng một mẫu hợp lệ đầu tiên. Đây chỉ là lỗi nhỏ về chỉ số, không làm hỏng thí nghiệm, nhưng nó là ví dụ tốt cho thấy chuỗi thời gian đòi hỏi sự cẩn thận đến từng chỉ số.
+
+\section{Kiến trúc thực sự của mô hình và những ý tưởng đáng ghi nhận}
+
+Sau khi dựng lại bài toán, ta chuyển sang kiến trúc. Gọi
+\[
+X_t\in\mathbb{R}^{60\times 6}
+\]
+là cửa sổ 60 bước của 6 đặc trưng. Mô hình tách thành ba nhánh. Nhánh thứ nhất lấy bước cuối \(x_t\in\mathbb{R}^6\), cắt 4 đặc trưng đầu và đưa vào \texttt{FeatureGroupANFIS} cho nhóm return. Nhánh thứ hai cũng lấy \(x_t\), cắt 2 đặc trưng cuối và đưa vào một \texttt{FeatureGroupANFIS} khác cho nhóm chỉ báo. Nhánh thứ ba đưa toàn bộ \(X_t\) qua hai lớp BiLSTM nối tiếp. Cuối cùng, các biểu diễn này được ghép lại, đi qua một lớp \texttt{Dense(32, relu)} rồi sinh 4 đầu ra tuyến tính.
+
+Viết trừu tượng, mô hình có dạng
+\[
+\widehat{\mathbf y}_{t+1}
+=
+g_\psi\bigl(
+h_{\mathrm{ret}}(x_t),
+h_{\mathrm{ind}}(x_t),
+h_{\mathrm{seq}}(X_t)
+\bigr),
+\]
+trong đó \(h_{\mathrm{ret}}\) và \(h_{\mathrm{ind}}\) là hai khối ANFIS, còn \(h_{\mathrm{seq}}\) là khối BiLSTM. Biểu thức này cho ta thấy ngay một sự thật nền tảng: đầu ra cuối \emph{không phải} đầu ra trực tiếp của một hệ Sugeno duy nhất. Nó là đầu ra của một mô hình lai, nơi các thành phần mờ chỉ là các bộ biến đổi trung gian ở đầu vào.
+
+Tuy vậy, sẽ không công bằng nếu chỉ nhìn mô hình dưới lăng kính phê phán. Script này có ít nhất ba ý tưởng kiến trúc đáng ghi nhận.
+
+Ý tưởng thứ nhất là \emph{chia nhóm đặc trưng để giảm bùng nổ số luật}. Nếu dùng một ANFIS duy nhất cho cả 6 đặc trưng với 2 hàm thuộc mỗi đặc trưng, số luật của lưới đầy đủ là
+\[
+2^6=64.
+\]
+Script chia thành một ANFIS 4 đặc trưng và một ANFIS 2 đặc trưng, nên tổng số luật là
+\[
+2^4+2^2=16+4=20.
+\]
+Đây là một quyết định có cơ sở. Nó nhắm đúng một điểm yếu cấu trúc của ANFIS: số luật tăng theo cấp số mũ theo số đầu vào.
+
+Ý tưởng thứ hai là \emph{khởi tạo tâm của hàm thuộc bằng K-Means} thay vì thuần ngẫu nhiên. K-Means một chiều trên từng đặc trưng không tạo ``nghĩa ngôn ngữ'' một cách thần kỳ, nhưng nó thường cho một vị trí khởi tạo có trật tự hơn so với lấy ngẫu nhiên hoàn toàn. Nếu dữ liệu được tiền xử lý đúng, đây là một ý tưởng hợp lý và thậm chí khá thực dụng.
+
+Ý tưởng thứ ba là \emph{tách vai trò của nhánh mờ và nhánh thời gian}. Hai nhánh ANFIS nhìn vào bước cuối để mã hóa trạng thái cục bộ gần nhất; BiLSTM nhìn cả cửa sổ để mã hóa động học thời gian. Đây là một trực giác có thể bảo vệ được. Nó không đảm bảo mô hình sẽ tốt, nhưng ít nhất nó cho thấy tác giả có ý thức rằng ``khái niệm ngôn ngữ cục bộ'' và ``mẫu động học trên chuỗi'' là hai loại tín hiệu khác nhau.
+
+Chính vì có những ý tưởng tốt này mà việc kiểm toán phần còn lại càng đáng làm. Khi một mô hình có vài trực giác hay, người ta càng dễ bỏ qua lỗi giao thức và càng dễ tin các tuyên bố diễn giải mạnh hơn mức mà code bảo đảm.
+
+\section{Ba sai phạm phương pháp luận làm hỏng giá trị của chỉ số đánh giá}
+
+Phần nghiêm trọng nhất của script không nằm ở chỗ nó dùng ANFIS, BiLSTM hay K-Means, mà nằm ở chỗ nó đánh giá mô hình như thế nào. Trong khoa học dữ liệu, một kiến trúc tầm thường nhưng giao thức sạch vẫn có thể cho kết luận hữu ích. Ngược lại, một kiến trúc thông minh nhưng giao thức sai có thể cho ra bảng chỉ số rất đẹp mà giá trị khoa học rất thấp. Script này rơi vào trường hợp thứ hai.
+
+\textbf{Sai phạm thứ nhất là chuẩn hóa trên toàn bộ dữ liệu trước khi tách train/test.} Trong \texttt{prepare\_data}, script thực hiện
+\[
+\texttt{scaled\_feat = feat\_scaler.fit\_transform(features)},
+\qquad
+\texttt{scaled\_tgt = tgt\_scaler.fit\_transform(targets)},
+\]
+rồi mới chia tập theo thời gian. Để thấy đây là rò rỉ thông tin theo nghĩa chặt, gọi \(\mu_{\mathrm{all}}\) và \(\sigma_{\mathrm{all}}\) là trung bình và độ lệch chuẩn của toàn bộ đặc trưng. Khi đó một mẫu train tại thời điểm \(t\) sau chuẩn hóa có dạng
+\[
+\widetilde x_t = \frac{x_t-\mu_{\mathrm{all}}}{\sigma_{\mathrm{all}}}.
+\]
+Nhưng \(\mu_{\mathrm{all}}\) và \(\sigma_{\mathrm{all}}\) phụ thuộc vào cả phần cuối chuỗi, bao gồm cả vùng về sau thuộc tập test. Như vậy \(\widetilde x_t\) không chỉ là hàm của thông tin khả dụng tại thời điểm \(t\) cộng với thống kê huấn luyện; nó đã bị đặt trong một hệ quy chiếu có hấp thụ thông tin tương lai. Đó chính là rò rỉ thông tin.
+
+Lỗi này còn nặng hơn vẻ bề ngoài của nó. Không chỉ phần huấn luyện mạng bị nhiễm thông tin tương lai; cả bước K-Means khởi tạo tâm hàm thuộc cũng bị nhiễm, vì K-Means được áp trên \texttt{d['X\_train']} đã được chuẩn hóa bằng thống kê toàn chuỗi. Như vậy, ngay từ tầng tiền đề của các luật mờ, mô hình đã không còn được xây trên một điều kiện thông tin sạch.
+
+\begin{example}
+Xét một đặc trưng một chiều với bốn quan sát theo thời gian:
+\[
+1,\quad 2,\quad 3,\quad 100.
+\]
+Giả sử ba điểm đầu là train, điểm cuối là test.
+
+Nếu chuẩn hóa đúng trên train, trung bình train là \(2\), nên ba điểm train được đặt quanh 0 một cách tự nhiên. Nếu chuẩn hóa trên toàn bộ chuỗi, trung bình toàn bộ là \(26.5\), khi đó cả ba điểm train bị đẩy mạnh sang phía âm chỉ vì sự hiện diện của giá trị 100 ở tương lai. Không có nhãn tương lai nào bị chép vào đầu vào, nhưng hình học của dữ liệu train đã bị uốn bởi test. Đó chính là leakage.
+\end{example}
+
+\textbf{Sai phạm thứ hai là dùng tập test làm tập validation trong quá trình huấn luyện.} Câu lệnh
+\[
+\texttt{validation\_data=(d['X\_test'], d['y\_test'])}
+\]
+được đưa trực tiếp vào \texttt{model.fit}. Khi đó, \emph{EarlyStopping} theo dõi tập test, \emph{ReduceLROnPlateau} theo dõi tập test, và trọng số tốt nhất được khôi phục cũng dựa trên tập test. Nói cách khác, tập test đã tham gia vào quá trình ra quyết định huấn luyện. Một tập như vậy không còn là test theo đúng nghĩa khoa học.
+
+Lập luận này có thể viết rất gọn nhưng rất chặt. Giả sử một lần huấn luyện sinh ra dãy mô hình
+\[
+f_{\theta^{(1)}}, f_{\theta^{(2)}}, \dots, f_{\theta^{(E)}}.
+\]
+Nếu ta dùng một tập dữ liệu để chọn epoch nào là tốt nhất, tập dữ liệu đó đã tham gia vào thủ tục chọn mô hình. Một tập vừa tham gia chọn mô hình vừa được dùng để báo cáo kết quả cuối không còn là đánh giá ngoài mẫu độc lập nữa. Nó là một phần của tối ưu.
+
+\textbf{Sai phạm thứ ba là chọn lần chạy tốt nhất theo chỉ số trên tập test.} Khi \texttt{n\_runs>1}, script lặp nhiều seed, tính \(\mathrm{Avg}\ R^2\) trên tập test cho từng lần chạy, rồi giữ lần tốt nhất. Đây là một tầng tối ưu hóa thứ hai trên test. Nó tương đương với việc dò nhiều kết quả ngẫu nhiên rồi chỉ công bố kết quả đẹp nhất trên cùng một bộ kiểm tra. Về bản chất, đây là một dạng \emph{multiple testing} không hiệu chỉnh.
+
+Ba sai phạm này không đứng riêng lẻ. Chúng chồng lên nhau theo một cách đặc biệt nguy hiểm. Trước hết, dữ liệu train đã được chuẩn hóa bằng thông tin của toàn bộ chuỗi. Sau đó, quá trình huấn luyện và dừng sớm nhìn trực tiếp vào test. Cuối cùng, nếu có nhiều lần chạy, test lại tiếp tục bị dùng để chọn seed đẹp nhất. Khi một chỉ số cuối cùng được in ra sau ba lớp can thiệp như vậy, giá trị của nó như một ước lượng ngoài mẫu độc lập gần như không còn.
+
+Đây là lý do chương này phải nói rất thẳng: những lỗi nghiêm trọng nhất của script không phải là lỗi biểu thức hay lỗi API. Chúng là lỗi phương pháp luận. Và trong nghiên cứu, lỗi phương pháp luận mới là loại lỗi phá giá trị của toàn bộ kết quả.
+
+\section{Tại sao tuyên bố ``giải thích được'' của mô hình hiện tại bị thổi phồng}
+
+Phần thứ hai cần kiểm toán là câu chuyện diễn giải. Script được đặt tên và mô tả theo hướng nhấn mạnh ``fuzzy rules'', ``semantic meaning'' và ``explainable predictions''. Những cụm này không sai hoàn toàn, nhưng ở trạng thái hiện tại chúng mạnh hơn mức mà code thực sự bảo đảm.
+
+Vấn đề đầu tiên nằm ở việc \texttt{get\_rule\_descriptions} chỉ sinh ra các chuỗi dạng
+\[
+\texttt{Rule 1: IF Close\_ret is LOW AND Open\_ret is HIGH ...}
+\]
+tức là chỉ có \emph{vế tiền đề}. Trong ANFIS Sugeno bậc một, một luật đầy đủ phải có dạng
+\[
+\text{IF antecedent THEN } y = a_0 + a_1x_1+\cdots+a_dx_d.
+\]
+Chính phần hệ quả mới cho biết khi luật được kích hoạt thì đầu ra bị kéo về đâu. Nếu chỉ in tiền đề mà không in các hệ số hệ quả, ta chưa hề có ``luật đầy đủ'' theo nghĩa giải thích dự báo. Ta chỉ mới biết vùng nào của không gian đầu vào đang sáng lên.
+
+Vấn đề thứ hai là nhãn LOW/HIGH không được bảo toàn về ngữ nghĩa sau huấn luyện. Script khởi tạo tâm các hàm thuộc bằng K-Means và sắp tăng dần, nên tại thời điểm khởi tạo ta có thể nói tạm rằng chỉ số 0 gần với ``thấp'' hơn chỉ số 1. Nhưng sau đó các tâm \texttt{mf\_centers} là tham số được học tự do, không có ràng buộc thứ tự hay khoảng cách. Không có gì ngăn
+\[
+c_{\mathrm{LOW}} > c_{\mathrm{HIGH}}
+\]
+sau một giai đoạn tối ưu. Nếu điều đó xảy ra mà ta vẫn giữ nguyên nhãn LOW/HIGH trong báo cáo, thì chuỗi chữ ``feature is LOW'' chỉ còn là một nhãn chỉ số, không còn là một mệnh đề ngôn ngữ trung thực.
+
+Vấn đề thứ ba nằm ở chính kiến trúc cuối của mô hình. Như đã thấy,
+\[
+\widehat{\mathbf y}_{t+1}
+=
+g_\psi\bigl(
+h_{\mathrm{ret}}(x_t),
+h_{\mathrm{ind}}(x_t),
+h_{\mathrm{seq}}(X_t)
+\bigr).
+\]
+Đầu ra cuối không phải là đầu ra trực tiếp của các luật mờ. Nó là đầu ra của một khối hợp nhất biểu diễn ANFIS với biểu diễn BiLSTM rồi đi qua thêm các lớp \texttt{Dense}. Điều này không có nghĩa nhánh mờ vô giá trị. Nó chỉ có nghĩa rằng câu ``mô hình dự báo cuối là giải thích được bằng luật mờ'' là quá mạnh. Mức mô tả trung thực hơn phải là: \emph{mô hình có các thành phần mờ, và ta có thể phân tích một phần cấu trúc quy tắc cũng như mức kích hoạt của chúng}.
+
+Vấn đề thứ tư xuất hiện trong \texttt{analyze\_prediction}. Hàm này trả ra các luật có \emph{firing strength} lớn nhất, tức các luật đang kích hoạt mạnh. Đây là một thông tin hữu ích, nhưng nó chưa phải là giải thích đóng góp cuối cùng. Một luật có thể kích hoạt mạnh nhưng hệ quả của nó trung tính; một luật khác có thể kích hoạt vừa phải nhưng hệ quả kéo đầu ra rất mạnh theo một hướng nào đó. Không có phần hệ quả, và không có phân rã đóng góp sau khối trộn cuối, ta không thể nói rằng ``top active rules'' đã giải thích đầy đủ dự báo.
+
+\begin{example}
+Giả sử có hai luật với độ kích hoạt chuẩn hóa lần lượt là
+\[
+w_1=0.9,\qquad w_2=0.1.
+\]
+Nếu hệ quả của luật thứ nhất là \(f_1(x)=0\) còn hệ quả của luật thứ hai là \(f_2(x)=100\), thì đầu ra Sugeno là
+\[
+y = w_1 f_1(x) + w_2 f_2(x) = 0.9\cdot 0 + 0.1\cdot 100 = 10.
+\]
+Lúc này, luật 1 là luật kích hoạt mạnh nhất, nhưng chính luật 2 mới tạo phần lớn độ lệch khỏi 0. Vì vậy, chỉ báo ``top active rules'' không đủ để thay cho phân tích đóng góp thật của luật.
+\end{example}
+
+Tóm lại, vấn đề diễn giải của script không nằm ở chỗ ``không có chút nào để đọc''. Vẫn có thứ để đọc: số luật, tâm và độ rộng của hàm thuộc, mức kích hoạt tương đối giữa các luật. Nhưng phần có thể đọc ấy chỉ là một \emph{lớp cục bộ} của mô hình, không phải lời giải thích trọn vẹn cho đầu ra cuối. Nếu không giữ đúng phạm vi phát biểu, ta sẽ biến một ưu điểm có thật nhưng hạn chế thành một tuyên bố quá mức.
+
+\section{Những bất nhất mô hình hóa khác: không phải lỗi nào cũng cùng mức độ, nhưng đều đáng nói}
+
+Ngoài các sai phạm giao thức và câu chuyện diễn giải, script còn chứa một cụm vấn đề khác thuộc tầng mô hình hóa và triển khai. Chúng không phải tất cả đều nghiêm trọng ngang nhau, nhưng trong một giáo trình nghiêm túc ta cần phân loại đúng mức thay vì bỏ qua hoặc phóng đại.
+
+Điểm thứ nhất là \emph{đầu ra OHLC không bị ép tuân thủ hình học của nến giá}. Mô hình sinh bốn số liên tục độc lập rồi tính RMSE, MAE, MAPE, \(R^2\) cho từng thành phần. Nhưng dữ liệu OHLC không phải bốn số hoàn toàn độc lập. Một bộ dự báo hợp lệ cần thỏa
+\[
+\widehat H_{t+1}\ge \max\{\widehat O_{t+1},\widehat C_{t+1}\},
+\qquad
+\widehat L_{t+1}\le \min\{\widehat O_{t+1},\widehat C_{t+1}\}.
+\]
+Kiến trúc hiện tại không có ràng buộc nào trong hàm mất mát hoặc trong tham số hóa đầu ra để ép các bất đẳng thức đó. Vì vậy, ta có thể kết luận chắc chắn rằng mô hình \emph{cho phép} sinh ra các bộ OHLC không hợp lệ. Điều ta chưa thể kết luận nếu không chạy thực nghiệm là tần suất vi phạm thực tế là bao nhiêu.
+
+Điểm thứ hai là \emph{sự không nhất quán ngữ nghĩa giữa đầu vào và đầu ra}. Đầu vào \texttt{Open\_ret\_t} được hiểu là thay đổi của \(O_t\) so với \(O_{t-1}\), còn đầu ra \texttt{target\_Open\_ret\_t} lại là thay đổi của \(O_{t+1}\) so với \(C_t\). Cùng một hậu tố \texttt{\_ret} nhưng hai biến mang hai ý nghĩa chuẩn hóa khác nhau. Điều này không làm phép tính sai, nhưng nó làm cho câu chuyện khái niệm trở nên mờ đục hơn. Với một mô hình muốn nhấn mạnh tính diễn giải, sự mờ đục ngữ nghĩa như vậy không nên bị xem nhẹ.
+
+Điểm thứ ba liên quan đến \emph{Directional Accuracy}. Hàm \texttt{calc\_directional\_accuracy} so sánh hướng của dự báo giá với giá hiện tại của từng thành phần \(O_t,H_t,L_t,C_t\). Với \emph{Close}, cách đo này khá tự nhiên vì mục tiêu cũng neo trực tiếp vào \(C_t\). Nhưng với Open, High và Low, mô hình đã được huấn luyện trên các mục tiêu chuẩn hóa theo \(C_t\), trong khi chỉ số hướng lại được tính so với \(O_t,H_t,L_t\). Nói ``Directional Accuracy hoàn toàn sai'' có thể là quá mạnh; nhưng nói rằng nó không hoàn toàn đồng bộ với mục tiêu tối ưu trong huấn luyện là một kết luận cẩn trọng và đúng hơn nhiều.
+
+Điểm thứ tư là \emph{khả năng tái lập của script trong workspace hiện tại}. Hàm \texttt{main} mã hóa cứng đường dẫn
+\[
+\texttt{/Users/bao/Documents/tsa\_paper\_1},
+\]
+trong khi workspace hiện tại là một cây thư mục khác. Điều này làm script chính không chạy được ngay trong ngữ cảnh repo đang mở. Đây không phải lỗi toán học của mô hình, nhưng lại là lỗi học thuật theo nghĩa thực dụng: một hiện vật nghiên cứu không thể gọi là tái lập tốt nếu chính đường dẫn dữ liệu của nó bị buộc chặt vào một máy cụ thể.
+
+Điểm thứ năm là \emph{việc tuần tự hóa và tải lại mô hình chưa được chuẩn bị đủ chắc}. Lớp \texttt{FeatureGroupANFIS} có \texttt{get\_config}, cho thấy ý định hỗ trợ lưu mô hình là có. Nhưng không có đăng ký kiểu kiểu \texttt{@register\_keras\_serializable}, nên việc tải lại trong môi trường khác sẽ phụ thuộc vào việc người dùng có truyền \texttt{custom\_objects} đúng hay không. Đây là một điểm yếu về đóng gói và tính lặp lại, không phải lỗi phá huấn luyện ngay lập tức.
+
+Điều quan trọng ở đây là phân biệt mức độ nghiêm trọng. Các lỗi giao thức ở mục trước phá hỏng trực tiếp giá trị của đánh giá. Các điểm ở mục này chủ yếu làm suy giảm tính hợp lệ cấu trúc, tính trong suốt hoặc tính tái lập. Chúng vẫn đáng sửa, nhưng không nên trộn lẫn mọi thứ thành một mức ``sai như nhau''.
+
+\begin{example}
+Nếu mô hình dự báo
+\[
+\widehat O=100,\qquad \widehat C=102,\qquad \widehat H=101,\qquad \widehat L=99,
+\]
+thì
+\[
+\widehat H=101<\max\{\widehat O,\widehat C\}=102.
+\]
+Mọi chỉ số RMSE trên từng tọa độ có thể vẫn thấp, nhưng bộ OHLC này không còn là một cây nến hợp lệ. Ví dụ toy này cho thấy vì sao lỗi cấu trúc đầu ra không thể bị xem là chuyện thẩm mỹ.
+\end{example}
+
+\section{Điều gì nên được nói công bằng về BiLSTM, K-Means và bài báo tham chiếu}
+
+Một bài phân tích nghiêm túc không chỉ biết tìm lỗi. Nó còn phải biết dừng ở đúng chỗ, để không biến thận trọng thành thiên kiến phủ định.
+
+Trước hết, \emph{BiLSTM trong cửa sổ quá khứ không tự động gây rò rỉ thông tin}. Đây là nơi người đọc hay phản ứng theo thói quen. Nếu mô hình dự báo tại thời điểm \(t\) dùng toàn bộ đoạn lịch sử \([t-L+1,\dots,t]\), thì BiLSTM chỉ đi xuôi và ngược trên cùng một đoạn đã quan sát được. Nó không nhìn vào \(t+1,t+2,\dots\). Vì vậy, cáo buộc ``BiLSTM là nhìn vào tương lai'' trong ngữ cảnh này là không chính xác. Điều đáng phê bình hơn là BiLSTM làm việc giải thích động học khó hơn, chứ không phải nó mặc nhiên gây leakage.
+
+Thứ hai, \emph{K-Means để khởi tạo tâm hàm thuộc là một ý tưởng hợp lý nếu dữ liệu đầu vào sạch}. Vấn đề của script không nằm ở bản thân K-Means. Vấn đề nằm ở chỗ dữ liệu được đưa vào K-Means đã bị chuẩn hóa bằng thống kê của toàn bộ chuỗi. Nếu sửa đúng quy trình tách dữ liệu và chuẩn hóa, việc dùng K-Means một chiều để lấy tâm ban đầu cho hai Gaussian vẫn là một lựa chọn có thể bảo vệ được.
+
+Thứ ba, \emph{đối chiếu với Boyacioglu--Avci phải được làm rất tiết chế}. Script nhắc đến bài báo của Boyacioglu và Avci cùng với con số \(R^2\) rất cao. Tuy nhiên, một tài liệu tham khảo chỉ có giá trị trực tiếp khi bài toán, dữ liệu, tần suất, giao thức và cách đo tương đối đồng dạng. Ở đây, script hiện tại sử dụng một thiết lập khác đáng kể. Vì vậy, điều trung thực có thể nói là: kiến trúc này lấy cảm hứng từ việc dùng hai Gaussian membership functions và tinh thần ANFIS trong tài liệu tham khảo. Điều không nên gợi ý là: con số của bài báo kia là hậu thuẫn thực nghiệm trực tiếp cho chất lượng của mô hình hiện tại.
+
+Chính sự công bằng trong ba điểm trên làm cho phần phê bình còn lại có trọng lượng hơn. Ta không kết luận mọi thứ đều sai. Ta chỉ tách cái gì đáng giữ khỏi cái gì phải sửa.
+
+\section{Nếu muốn biến mô hình này thành một nghiên cứu đáng tin hơn, phải sửa theo thứ tự nào}
+
+Khi một script có nhiều vấn đề, phản xạ phổ biến là sửa từ chỗ dễ nhìn thấy nhất: thêm lớp, thay optimizer, tăng số luật, đổi activation, hay làm cho biểu đồ đẹp hơn. Đó gần như luôn là thứ tự sai. Với mô hình này, nếu mục tiêu là tăng giá trị khoa học chứ không chỉ tăng vẻ phức tạp, thứ tự sửa phải đảo lại hoàn toàn.
+
+Ưu tiên đầu tiên phải là \textbf{sửa giao thức đánh giá}. Ta cần tạo train/validation/test theo thứ tự thời gian ngay sau khi tạo cửa sổ; fit các bộ chuẩn hóa chỉ trên train; dùng validation cho dừng sớm, giảm tốc độ học và chọn seed; giữ test đúng nghĩa để chỉ đánh giá một lần sau cùng. Chỉ sau khi tầng này sạch, mọi chỉ số RMSE, MAE, MAPE, \(R^2\), Directional Accuracy mới bắt đầu có tư cách được đọc như bằng chứng.
+
+Ưu tiên thứ hai là \textbf{sửa câu chuyện diễn giải}. Nếu muốn giữ nhãn LOW/HIGH, ta cần ràng buộc thứ tự của tâm các hàm thuộc, chẳng hạn bằng một tham số hóa kiểu
+\[
+c_2 = c_1 + \operatorname{softplus}(\delta),
+\]
+để bảo đảm \(c_2\ge c_1\). Ta cũng cần trích xuất đầy đủ hệ quả của từng luật Sugeno, thay vì chỉ in tiền đề. Và quan trọng hơn cả, phần mô tả mô hình phải đổi giọng: đây là một \emph{hybrid model with fuzzy components}, không phải một bộ dự báo cuối ``giải thích được hoàn toàn''.
+
+Ưu tiên thứ ba là \textbf{sửa cấu trúc đầu ra}. Nếu bài toán thật sự là dự báo OHLC, ta nên tham số hóa đầu ra theo cách tôn trọng hình học nến giá, hoặc ít nhất thêm số hạng phạt cho các vi phạm
+\[
+\widehat H < \max(\widehat O,\widehat C),
+\qquad
+\widehat L > \min(\widehat O,\widehat C).
+\]
+Một cách khác là đổi sang tham số hóa bằng \((\widehat C,\widehat r_{\mathrm{up}},\widehat r_{\mathrm{down}},\widehat g)\) rồi suy ra \(O,H,L\) theo các biến luôn không âm thích hợp. Khi đó, cấu trúc hợp lệ được bảo vệ ngay trong hình học của đầu ra.
+
+Ưu tiên thứ tư mới là \textbf{tối ưu kiến trúc}. Chỉ sau khi quy trình sạch và tuyên bố diễn giải trung thực, ta mới nên bàn đến việc BiLSTM có cần hay không, số units bao nhiêu, số hàm thuộc có nên tăng, hay có nên thay Dense cuối bằng một cơ chế trộn có cấu trúc hơn. Sửa kiến trúc trước khi sửa giao thức gần như chỉ làm tăng tốc độ tự đánh lừa mình.
+
+\section{Kết luận của chương và bài học phương pháp lớn hơn chính script này}
+
+\texttt{run\_feature\_group\_anfis.py} không phải là một script vô nghĩa. Nó có vài trực giác kiến trúc đáng tôn trọng: chia nhóm đặc trưng để tránh bùng nổ số luật, dùng K-Means để khởi tạo tâm, và cố gắng ghép tri thức mờ với động học thời gian. Nhưng chính vì có những trực giác tốt ấy, nó càng cần được đọc với chuẩn mực cao hơn.
+
+Kết luận quan trọng nhất của chương là thế này: các lỗi nặng nhất của script không nằm ở ``mô hình có dùng ANFIS đúng nghĩa thuần túy hay không'', mà nằm ở chỗ các chỉ số cuối được sản sinh ra bởi một giao thức đã dùng thông tin của test ở nhiều tầng. Sau đó, trên nền các chỉ số ấy, script lại kể một câu chuyện diễn giải mạnh hơn mức mà cấu trúc mô hình thực sự cho phép. Nếu không tách hai lớp sai này ra, người đọc rất dễ hoặc bị mê hoặc bởi phần fuzzy, hoặc phản ứng ngược lại bằng cách phủ định sạch mọi ý tưởng trong mô hình.
+
+Giá trị sư phạm lớn nhất của chương này vì vậy không chỉ là ở việc nó chỉ ra vài lỗi của một file Python cụ thể. Giá trị lớn hơn là ở một thói quen trí tuệ: khi đọc bất kỳ mô hình nào, hãy luôn hỏi đồng thời ba câu. Bài toán toán học thực sự là gì. Code có thực hiện đúng bài toán ấy không. Và giao thức đánh giá có đủ sạch để các chỉ số cuối còn đáng tin hay không. Nếu giữ được ba câu hỏi đó trong đầu, người học sẽ tránh được cả hai cạm bẫy phổ biến nhất của thời đại học máy: tin quá nhanh vào những mô hình trông ấn tượng, và phủ định quá nhanh những ý tưởng còn có thể cứu được bằng một quy trình đúng.

@@ -1,0 +1,384 @@
+\chapter{Nền tảng toán học: đại số tuyến tính, xác suất và tối ưu}
+
+\section{Vì sao người học máy cần một nền toán vững}
+
+Rất nhiều khó khăn khi học học máy và học sâu không phát sinh từ sự ``khó'' của mô hình, mà từ việc bỏ qua nền toán học. Khi đọc một công thức, nếu ta không rõ một đại lượng là số vô hướng hay vectơ, một hàm đang ánh xạ từ đâu đến đâu, hay một kỳ vọng đang lấy theo phân phối nào, thì việc hiểu sẽ nhanh chóng chuyển thành học thuộc. Mục tiêu của chương này không phải dạy hết toán, mà là xây dựng một bộ công cụ đủ để tất cả các chương sau không bị đứt mạch.
+
+\section{Vectơ, ma trận, chuẩn và hình học}
+
+Ta bắt đầu với không gian Euclid $\R^d$. Một vectơ
+\[
+\bm{x} = (x_1,\dots,x_d)^\top \in \R^d
+\]
+có thể được xem vừa là một đối tượng đại số, vừa là một điểm hình học, vừa là một bản ghi dữ liệu. Tích vô hướng
+\[
+\langle \bm{x}, \bm{y} \rangle = \bm{x}^\top \bm{y} = \sum_{j=1}^d x_j y_j
+\]
+đo mức độ thẳng hàng và cho phép ta định nghĩa độ dài
+\[
+\|\bm{x}\|_2 = \sqrt{\langle \bm{x}, \bm{x} \rangle}.
+\]
+
+Trong học máy, chuẩn không chỉ đo ``kích thước''. Nó còn là ngôn ngữ để điều chuẩn. Chuẩn $L^2$ trừng phạt các vectơ có năng lượng lớn; chuẩn $L^1$ khuyến khích nhiều hệ số bằng 0; chuẩn vô cùng đo thành phần lớn nhất. Khác biệt này sẽ trở lại trong \emph{ridge}, \emph{lasso}, và trong cách ta đánh giá độ nhạy của hàm dự báo.
+
+\begin{definition}
+Cho $p \ge 1$, chuẩn $L^p$ của vectơ $\bm{x}\in\R^d$ là
+\[
+\|\bm{x}\|_p = \left(\sum_{j=1}^d |x_j|^p\right)^{1/p}.
+\]
+Chuẩn $L^\infty$ được định nghĩa bởi
+\[
+\|\bm{x}\|_\infty = \max_j |x_j|.
+\]
+\end{definition}
+
+\begin{proposition}
+Với mọi $p \ge 1$, \(\|\cdot\|_p\) thỏa ba tính chất của một chuẩn: tính dương xác định, đồng nhất thức, và bất đẳng thức tam giác.
+\end{proposition}
+
+\begin{proof}
+Hai tính chất đầu tiên theo trực tiếp từ định nghĩa. Tính chất thứ ba dựa trên bất đẳng thức Minkowski:
+\[
+\left(\sum_j |x_j+y_j|^p\right)^{1/p}
+\le
+\left(\sum_j |x_j|^p\right)^{1/p}
++
+\left(\sum_j |y_j|^p\right)^{1/p}.
+\]
+Bất đẳng thức này là hệ quả của bất đẳng thức Hölder. Trong phạm vi tài liệu này, điều quan trọng không phải kỹ thuật chi tiết, mà là ý nghĩa: phép cộng vectơ không làm độ dài tăng hơn tổng độ dài từng vectơ.
+\end{proof}
+
+Một ma trận $X \in \R^{n\times d}$ có thể được xem là tập hợp $n$ điểm dữ liệu trong $d$ chiều, mỗi hàng là một mẫu. Trong hồi quy tuyến tính, ta sẽ gặp biểu thức $X\bm{w}$ liên tục. Về hình học, vectơ $X\bm{w}$ là tổ hợp tuyến tính của các cột của $X$, nên thuộc không gian cột của $X$. Điểm nhìn hình học này sẽ giải thích vì sao nghiệm bình phương tối thiểu là hình chiếu trực giao của $\bm{y}$ lên không gian cột của $X$.
+
+\section{Trị riêng, vectơ riêng và giảm chiều}
+
+Giả sử $A$ là ma trận vuông. Nếu tồn tại vectơ khác 0 sao cho
+\[
+A\bm{v} = \lambda \bm{v},
+\]
+thì $\bm{v}$ là vectơ riêng và $\lambda$ là trị riêng. Khái niệm này cực kỳ quan trọng ở hai nơi. Thứ nhất, nó diễn tả các hướng mà biến đổi tuyến tính chỉ co giãn hoặc co lại, không xoay sang hướng khác. Thứ hai, nó nằm ở trung tâm của \emph{PCA} (phân tích thành phần chính) và nhiều phương pháp phân tích phổ.
+
+Nếu $A$ đối xứng thực, ta có một hệ vectơ riêng trực giao, và $A$ có thể được chéo hóa trực giao. Điều này cho phép ta giảm nhiều bài toán ma trận về bài toán trên các trục độc lập. Trong PCA, ma trận hiệp phương sai mẫu
+\[
+\widehat{\Sigma} = \frac{1}{n}\sum_{i=1}^n (\bm{x}_i-\bar{\bm{x}})(\bm{x}_i-\bar{\bm{x}})^\top
+\]
+là đối xứng dương bán xác định, nên có cơ sở vectơ riêng trực giao. Hướng có trị riêng lớn nhất là hướng phương sai lớn nhất.
+
+\begin{theorem}
+Thành phần chính thứ nhất của PCA là nghiệm của bài toán
+\[
+\max_{\|\bm{w}\|_2=1} \bm{w}^\top \widehat{\Sigma}\bm{w}.
+\]
+\end{theorem}
+
+\begin{proof}
+Ta cần tối đa hóa phương sai của dữ liệu khi chiếu lên hướng đơn vị $\bm{w}$. Đại lượng đó là
+\[
+\frac{1}{n}\sum_{i=1}^n \big(\bm{w}^\top(\bm{x}_i-\bar{\bm{x}})\big)^2
+= \bm{w}^\top \widehat{\Sigma}\bm{w}.
+\]
+Đặt hàm Lagrange
+\[
+\mathcal{L}(\bm{w},\lambda)=\bm{w}^\top \widehat{\Sigma}\bm{w}-\lambda(\bm{w}^\top \bm{w}-1).
+\]
+Lấy gradient theo $\bm{w}$ và cho bằng 0, ta được
+\[
+2\widehat{\Sigma}\bm{w} - 2\lambda \bm{w}=0
+\quad\Longrightarrow\quad
+\widehat{\Sigma}\bm{w}=\lambda \bm{w}.
+\]
+Nghiệm tối ưu phải là vectơ riêng, và giá trị mục tiêu bằng trị riêng tương ứng. Để tối đa hóa, ta chọn trị riêng lớn nhất.
+\end{proof}
+
+Chứng minh này là mẫu hình đẹp cho một nguyên lý quan trọng: rất nhiều bài toán học máy được giải bằng cách đổi ngôn ngữ ``tối đa hóa đại lượng có ý nghĩa thống kê'' sang ngôn ngữ ``giải bài toán trị riêng/gradient/đối ngẫu''.
+
+\section{Đạo hàm, gradient, Jacobian và Hessian}
+
+Nếu $f:\R^d\to\R$ là hàm vô hướng, gradient của nó là
+\[
+\nabla f(\bm{x}) =
+\begin{bmatrix}
+\frac{\partial f}{\partial x_1}\\
+\vdots\\
+\frac{\partial f}{\partial x_d}
+\end{bmatrix}.
+\]
+Gradient chỉ hướng tăng nhanh nhất cục bộ của hàm. Do đó, phương pháp \emph{gradient descent} (hạ dốc theo gradient) cập nhật theo hướng âm của gradient:
+\[
+\bm{x}_{k+1} = \bm{x}_k - \eta_k \nabla f(\bm{x}_k).
+\]
+
+Nếu $F:\R^d \to \R^m$, \emph{Jacobian} là ma trận $m\times d$ gồm các đạo hàm riêng cấp một. Nếu $f:\R^d\to\R$, \emph{Hessian} là ma trận đạo hàm cấp hai
+\[
+H_f(\bm{x}) =
+\left[\frac{\partial^2 f}{\partial x_i \partial x_j}\right]_{i,j=1}^d.
+\]
+Hessian mã hóa độ cong cục bộ của hàm. Nếu Hessian dương xác định trên mọi điểm, hàm là lồi địa phương; nếu trên mọi điểm của một miền lồi, hàm là lồi trên miền đó.
+
+\begin{definition}
+Một hàm $f$ trên tập lồi $C$ được gọi là lồi nếu với mọi $\bm{x},\bm{y}\in C$ và mọi $\lambda\in[0,1]$,
+\[
+f(\lambda \bm{x} + (1-\lambda)\bm{y})
+\le
+\lambda f(\bm{x}) + (1-\lambda) f(\bm{y}).
+\]
+\end{definition}
+
+Tính lồi quan trọng vì nó làm đơn giản hóa bài toán tối ưu. Với hàm lồi, mọi cực tiểu địa phương đều là cực tiểu toàn cục. Trong học máy cổ điển, điều này dẫn đến các thuật toán có bảo đảm hội tụ rõ ràng. Trong học sâu, ta hiếm khi có xa xỉ như thế, nên kỹ năng thực hành và hiểu động học tối ưu trở nên quan trọng hơn.
+
+\begin{proposition}
+Nếu $f:\R^d\to\R$ khả vi hai lần và Hessian của nó dương bán xác định ở mọi điểm trong một tập lồi $C$, thì $f$ là hàm lồi trên $C$.
+\end{proposition}
+
+\begin{proof}
+Lấy bất kỳ $\bm{x},\bm{y}\in C$, đặt $\bm{d}=\bm{y}-\bm{x}$ và xét
+\[
+g(t)=f(\bm{x}+t\bm{d}),\qquad t\in[0,1].
+\]
+Ta có
+\[
+g''(t)=\bm{d}^\top H_f(\bm{x}+t\bm{d})\bm{d}\ge 0.
+\]
+Do đó $g$ là hàm lồi trên đoạn $[0,1]$. Tính lồi một chiều của $g$ cho
+\[
+g(\lambda)\le \lambda g(1)+(1-\lambda)g(0),
+\]
+tương đương với tính lồi của $f$ trên đoạn nối $\bm{x}$ và $\bm{y}$.
+\end{proof}
+
+\section{Quy tắc dây chuyền và lan truyền ngược được xây trên nó}
+
+Nếu $h(\bm{x}) = f(g(\bm{x}))$ với $g:\R^d\to\R^m$ và $f:\R^m\to\R$, thì
+\[
+\nabla h(\bm{x}) = J_g(\bm{x})^\top \nabla f(g(\bm{x})).
+\]
+Công thức đơn giản này là cột sống của \emph{backpropagation} (lan truyền ngược). Trong một mạng nhiều lớp, hàm đầu ra là hợp thành của nhiều ánh xạ. Thay vì tính đạo hàm từ đầu mỗi lần, lan truyền ngược truyền ngược một ``tín hiệu lỗi'' qua từng lớp, tại mỗi lớp nhân thêm Jacobian cục bộ. Bản chất của nó không phải phép màu thuật, mà là quy tắc dây chuyền được tổ chức lại một cách tiết kiệm.
+
+Cho một lớp affine
+\[
+\bm{z} = W\bm{x} + \bm{b},
+\]
+và một phi tuyến từng phần tử $\bm{a}=\phi(\bm{z})$. Nếu \emph{loss} là $L$, ta có
+\[
+\frac{\partial L}{\partial W}
+=
+\frac{\partial L}{\partial \bm{z}}
+\bm{x}^\top,
+\qquad
+\frac{\partial L}{\partial \bm{b}}
+=
+\frac{\partial L}{\partial \bm{z}},
+\qquad
+\frac{\partial L}{\partial \bm{x}}
+=
+W^\top \frac{\partial L}{\partial \bm{z}}.
+\]
+Những công thức này sẽ được suy ra lại một cách có hệ thống ở chương về mạng nơ-ron.
+
+\section{Xác suất như ngôn ngữ mô tả bất định}
+
+Học máy hiện đại gần như không thể tách khỏi xác suất. Xác suất cung cấp ngôn ngữ mô tả sự bất định và tạo cầu nối giữa mô hình và dữ liệu. Một biến ngẫu nhiên $X$ là một hàm đo được trên không gian mẫu. Trong thực hành, ta thường làm việc với phân phối của $X$ qua các mật độ, xác suất có điều kiện, và kỳ vọng.
+
+Kỳ vọng của một hàm $g(X)$ là
+\[
+\E[g(X)] = \int g(x)\,p(x)\,dx
+\]
+nếu $X$ liên tục, hoặc là tổng nếu $X$ rời rạc. Phương sai đo độ phân tán:
+\[
+\Var(X)=\E[(X-\E[X])^2].
+\]
+Hiệp phương sai giữa hai biến $X$ và $Y$ là
+\[
+\Cov(X,Y)=\E[(X-\E[X])(Y-\E[Y])].
+\]
+
+Những đại lượng này không chỉ là ký hiệu. Chúng giúp ta phân tích tổng quát hóa. Ví dụ, \emph{MSE} (sai số bình phương trung bình) có thể tách thành thành phần độ chệch và phương sai. Nhiều thuật toán học tham số bằng trung bình mẫu, và tính tốt của ước lượng phụ thuộc vào kỳ vọng và phương sai của nó.
+
+\section{Xác suất có điều kiện, Bayes và cực đại hóa hàm khả năng}
+
+Xác suất có điều kiện của $Y$ khi biết $X=x$ là
+\[
+p(y|x) = \frac{p(x,y)}{p(x)},
+\]
+miễn là $p(x)>0$. Công thức Bayes nói rằng
+\[
+p(\theta|\mathcal{D}) = \frac{p(\mathcal{D}|\theta)p(\theta)}{p(\mathcal{D})}.
+\]
+Nó là cầu nối giữa dữ liệu và tri thức tiên nghiệm.
+
+\emph{Maximum likelihood} (cực đại hóa hàm khả năng) chọn tham số làm cho dữ liệu quan sát ``có khả năng xuất hiện cao nhất'':
+\[
+\hat{\theta}_{\mathrm{MLE}} \in \argmax_\theta p(\mathcal{D}|\theta).
+\]
+Vì \(\log\) là hàm tăng, ta thường tối đa hóa \emph{log-likelihood}
+\[
+\ell(\theta)=\sum_{i=1}^n \log p(y_i|\bm{x}_i,\theta).
+\]
+Trong rất nhiều mô hình, tối thiểu hóa một \emph{loss} phổ biến chính là tối đa hóa \emph{likelihood} dưới một giả thiết nhiễu cụ thể.
+
+\begin{example}
+Nếu
+\[
+y_i = \bm{w}^\top \bm{x}_i + b + \varepsilon_i,\qquad \varepsilon_i \stackrel{i.i.d.}{\sim}\mathcal{N}(0,\sigma^2),
+\]
+thì
+\[
+p(y_i|\bm{x}_i,\bm{w},b)
+\propto
+\exp\left(-\frac{(y_i-\bm{w}^\top \bm{x}_i-b)^2}{2\sigma^2}\right).
+\]
+Tối đa hóa \emph{likelihood} tương đương với tối thiểu hóa tổng bình phương sai số. Vì vậy \emph{least squares} (bình phương tối thiểu) có thể được xem là nghiệm cực đại khả năng trong mô hình nhiễu Gaussian.
+\end{example}
+
+\section{Kỳ vọng có điều kiện và dự báo tối ưu theo MSE}
+
+Một kết quả cực kỳ quan trọng, nhưng thường bị đọc lướt, là: nếu \emph{loss} là bình phương sai số, hàm dự báo tối ưu là kỳ vọng có điều kiện.
+
+\begin{theorem}
+Xét bài toán tìm hàm $f$ tối thiểu hóa
+\[
+\E\big[(Y-f(X))^2\big].
+\]
+Khi đó mọi nghiệm tối ưu đều thỏa
+\[
+f^\star(x)=\E[Y|X=x]
+\]
+gần như khắp nơi.
+\end{theorem}
+
+\begin{proof}
+Xét một hàm bất kỳ $f$. Ta viết
+\[
+Y-f(X) = \big(Y-\E[Y|X]\big) + \big(\E[Y|X]-f(X)\big).
+\]
+Bình phương và lấy kỳ vọng:
+\begin{align*}
+\E[(Y-f(X))^2]
+&=
+\E[(Y-\E[Y|X])^2] \\
+&\quad + 2\E\Big[(Y-\E[Y|X])(\E[Y|X]-f(X))\Big] \\
+&\quad + \E[(\E[Y|X]-f(X))^2].
+\end{align*}
+Số hạng giữa bằng 0 vì
+\[
+\E[Y-\E[Y|X]\mid X]=0
+\]
+và \(\E[Y|X]-f(X)\) là hàm của \(X\). Do đó
+\[
+\E[(Y-f(X))^2]
+=
+\E[(Y-\E[Y|X])^2] + \E[(\E[Y|X]-f(X))^2].
+\]
+Số hạng đầu không phụ thuộc vào $f$, số hạng sau luôn không âm và bằng 0 khi và chỉ khi $f(X)=\E[Y|X]$ gần như chắc chắn.
+\end{proof}
+
+Kết quả này rất sâu sắc. Nó nói rằng dự báo theo MSE không phải ``đoán giá trị chân thực duy nhất'', mà là ước lượng trung bình có điều kiện. Nếu phân phối có điều kiện lệch, đa đỉnh, hay có đuôi dày, giá trị tối ưu theo MSE vẫn chỉ là trung bình. Đây là lý do một \emph{loss} phù hợp có ý nghĩa rất lớn.
+
+\section{Entropy, cross-entropy và độ lệch KL}
+
+Trong phân loại và mô hình xác suất, \emph{entropy} (nhiễu loạn thông tin) đo mức độ bất định của một phân phối:
+\[
+H(P) = -\sum_x P(x)\log P(x).
+\]
+\emph{Cross-entropy} (entropy chéo) giữa $P$ và $Q$ là
+\[
+H(P,Q) = -\sum_x P(x)\log Q(x).
+\]
+\emph{KL divergence} (độ lệch Kullback--Leibler) là
+\[
+\KL(P\|Q)=\sum_x P(x)\log \frac{P(x)}{Q(x)}.
+\]
+Ta có hệ thức
+\[
+H(P,Q)=H(P)+\KL(P\|Q).
+\]
+Do $H(P)$ không phụ thuộc vào $Q$, tối thiểu hóa \emph{cross-entropy} tương đương với tối thiểu hóa độ lệch KL. Trong học sâu cho phân loại, điều này giải thích vì sao entropy chéo là lựa chọn tự nhiên khi đầu ra của mô hình là một phân phối xấp xỉ.
+
+\begin{proposition}
+\[
+\KL(P\|Q)\ge 0
+\]
+với dấu bằng khi và chỉ khi $P=Q$ gần như khắp nơi.
+\end{proposition}
+
+\begin{proof}
+Đây là bất đẳng thức Gibbs. Từ tính lồi của hàm $-\log$, ta có
+\[
+-\log t \ge 1-t,\qquad t>0.
+\]
+Thay $t=Q(x)/P(x)$ và nhân với $P(x)$, tổng lại ta được
+\[
+\sum_x P(x)\log \frac{P(x)}{Q(x)} \ge 0.
+\]
+Dấu bằng xảy ra khi $Q(x)/P(x)=1$ trên các điểm có $P(x)>0$.
+\end{proof}
+
+\section{Tối ưu lồi, Lagrange và điều kiện tối ưu}
+
+Nhiều bài toán học máy là bài toán tối ưu có ràng buộc. Phương pháp \emph{Lagrange} đưa ràng buộc vào hàm mục tiêu bằng các bội số:
+\[
+\mathcal{L}(\bm{x},\lambda)=f(\bm{x})+\lambda g(\bm{x})
+\]
+nếu ràng buộc là $g(\bm{x})=0$. Điều kiện cần để tối ưu nói rằng gradient theo các biến bằng 0. Trong bài toán lồi, điều kiện \emph{KKT} tổng quát hóa kỹ thuật này cho ràng buộc bất đẳng thức.
+
+Tại sao người học máy cần điều này? Bởi vì rất nhiều bài toán cổ điển như \emph{SVM} (máy vectơ hỗ trợ) được hiểu rõ nhất qua Lagrangian và đối ngẫu. Thậm chí, nhiều thuật toán hiện đại cũng ẩn chứa ý tưởng này: điều chuẩn là một cách thay thế bài toán có ràng buộc bằng bài toán không ràng buộc.
+
+\section{Hạ dốc theo gradient trên hàm bậc hai}
+
+Một bài toán mẫu để hiểu \emph{gradient descent} là tối ưu hàm bậc hai
+\[
+f(\bm{x})=\frac{1}{2}\bm{x}^\top A\bm{x}-\bm{b}^\top \bm{x},
+\]
+với $A$ đối xứng dương xác định. Gradient là
+\[
+\nabla f(\bm{x})=A\bm{x}-\bm{b}.
+\]
+Nghiệm duy nhất thỏa $A\bm{x}^\star=\bm{b}$. Nếu cập nhật
+\[
+\bm{x}_{k+1}=\bm{x}_k-\eta(A\bm{x}_k-\bm{b}),
+\]
+và đặt sai số $\bm{e}_k=\bm{x}_k-\bm{x}^\star$, ta có
+\[
+\bm{e}_{k+1}=(I-\eta A)\bm{e}_k.
+\]
+Do đó hội tụ phụ thuộc vào phổ trị riêng của $A$. Nếu \(0<\eta<2/\lambda_{\max}(A)\), phương pháp hội tụ. Đây là bài học quan trọng: tốc độ học không thể tách khỏi hình học của bài toán.
+
+\section{Đạo hàm ma trận mà ta sẽ cần nhiều lần}
+
+Trong thực hành, một số công thức đạo hàm ma trận xuất hiện liên tục:
+\[
+\nabla_{\bm{w}} (\bm{a}^\top \bm{w}) = \bm{a},
+\qquad
+\nabla_{\bm{w}} (\bm{w}^\top A \bm{w}) = (A+A^\top)\bm{w},
+\]
+và nếu $A$ đối xứng thì bằng $2A\bm{w}$. Nếu
+\[
+f(\bm{w}) = \|X\bm{w}-\bm{y}\|_2^2,
+\]
+thì
+\[
+\nabla f(\bm{w}) = 2X^\top(X\bm{w}-\bm{y}).
+\]
+Công thức cuối này là nền của hồi quy tuyến tính, \emph{ridge}, và nhiều bài toán bình phương tối thiểu trong phần hệ quả mờ.
+
+\section{Nói về ổn định số học}
+
+Toán đúng chưa đủ; tính toán trên máy tính cần ổn định số học. Khi nhân nhiều xác suất nhỏ, dữ liệu có thể \emph{underflow} (tụt dưới ngưỡng biểu diễn). Khi tính \(\exp\) của số lớn, ta có thể \emph{overflow} (tràn số). Khi ma trận gần kỳ dị, nghiệm bình phương tối thiểu sẽ không ổn định. Học sâu và ANFIS đều gặp những vấn đề này.
+
+Ví dụ, trong logic mờ, độ kích hoạt của một luật thường là tích của nhiều độ thuộc. Nếu số đặc trưng lớn, tích này có thể rất nhỏ. Trong mã nguồn, người ta thường thêm \(\varepsilon\) để tránh chia cho 0 khi chuẩn hóa. Trong RNN, nhân lặp ma trận qua nhiều bước thời gian dễ dẫn đến triệt tiêu/nổ gradient. Trong bình phương tối thiểu, điều chuẩn kiểu ridge giúp giải quyết ma trận Gram kém điều kiện.
+
+Người mới thường xem những chi tiết như ``ép width dương'', ``thêm epsilon 1e-8'', hay ``gradient clipping'' (cắt gradient) là tiểu tiết lập trình. Không phải. Chúng là dấu vết của một vấn đề toán học sâu xa: một biểu thức đúng về đại số chưa chắc đã ổn định trong tính toán số.
+
+\section{Mẫu số chuẩn cho các chương sau}
+
+Ta kết thúc chương này bằng một ``mẫu số'' tư duy sẽ xuất hiện nhiều lần.
+
+\begin{enumerate}
+\item Xác định đại lượng cần tối ưu và lý do tại sao nó có ý nghĩa.
+\item Viết nó dưới dạng kỳ vọng lý tưởng và dạng xấp xỉ mẫu.
+\item Chọn họ hàm hoặc tham số.
+\item Tính gradient, nghiệm đóng, hay điều kiện tối ưu.
+\item Kiểm tra tính ổn định số học và ý nghĩa thống kê.
+\end{enumerate}
+
+Nếu một mô hình không thể được đọc bằng năm bước này, khả năng cao là ta chưa hiểu nó đủ sâu. Chương tiếp theo sẽ áp dụng mẫu số đó cho học máy thống kê.

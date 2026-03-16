@@ -1,0 +1,305 @@
+\chapter{Phụ lục: ví dụ tính tay, quy trình chuẩn và khung sửa mô hình}
+
+\section{Mục đích của phụ lục}
+
+Phần phụ lục này không phải nơi gom những mẩu vụn còn sót lại, mà là nơi làm ba việc quan trọng. Thứ nhất, ta giải một vài ví dụ tính tay để nối lại trực giác toán học với công thức. Thứ hai, ta viết ra một quy trình thí nghiệm chuẩn cho bài toán dự báo chuỗi thời gian có ANFIS, nhằm tránh các lỗi phương pháp luận đã chỉ ra ở Chương~11. Thứ ba, ta phác họa một phiên bản sửa của mô hình trong \texttt{run\_feature\_group\_anfis.py} theo tinh thần vừa chặt chẽ thống kê, vừa trung thực về diễn giải.
+
+\section{Ví dụ tính tay 1: hồi quy tuyến tính, đạo hàm và nghiệm đóng}
+
+Xét ba điểm dữ liệu một chiều:
+\[
+(x_1,y_1)=(1,2),\qquad (x_2,y_2)=(2,3),\qquad (x_3,y_3)=(3,5).
+\]
+Ta muốn khớp mô hình
+\[
+\hat{y}=wx+b.
+\]
+Đặt ma trận thiết kế mở rộng
+\[
+X=
+\begin{bmatrix}
+1 & 1\\
+2 & 1\\
+3 & 1
+\end{bmatrix},
+\qquad
+\bm{y}=
+\begin{bmatrix}
+2\\3\\5
+\end{bmatrix},
+\qquad
+\bm{\theta}=
+\begin{bmatrix}
+w\\b
+\end{bmatrix}.
+\]
+Hàm mất mát bình phương là
+\[
+L(\bm{\theta})=\|X\bm{\theta}-\bm{y}\|_2^2.
+\]
+Phương trình chuẩn cho ta
+\[
+X^\top X\bm{\theta}=X^\top \bm{y}.
+\]
+Ta tính được
+\[
+X^\top X=
+\begin{bmatrix}
+14 & 6\\
+6 & 3
+\end{bmatrix},
+\qquad
+X^\top \bm{y}=
+\begin{bmatrix}
+23\\
+10
+\end{bmatrix}.
+\]
+Giải hệ:
+\[
+\begin{bmatrix}
+14 & 6\\
+6 & 3
+\end{bmatrix}
+\begin{bmatrix}
+w\\b
+\end{bmatrix}
+=
+\begin{bmatrix}
+23\\10
+\end{bmatrix}.
+\]
+Từ phương trình thứ hai,
+\[
+6w+3b=10 \Longrightarrow 2w+b=\frac{10}{3}.
+\]
+Từ đó \(b=\frac{10}{3}-2w\). Thay vào phương trình đầu:
+\[
+14w+6\left(\frac{10}{3}-2w\right)=23
+\Longrightarrow 14w+20-12w=23
+\Longrightarrow 2w=3
+\Longrightarrow w=1.5.
+\]
+Suy ra
+\[
+b=\frac{10}{3}-3=\frac{1}{3}.
+\]
+Vậy mô hình tốt nhất theo bình phương tối thiểu là
+\[
+\hat{y}=1.5x+\frac{1}{3}.
+\]
+
+Ví dụ này nhỏ, nhưng nó làm rõ một điều rất lớn: nghiệm đóng không phải điều gì huyền bí, mà là hệ quả của một cấu trúc lồi rất mạnh. Khi ta rời thế giới này để sang ANFIS hay học sâu, điều ta đánh mất trước hết là sự đơn giản của bề mặt tối ưu.
+
+\section{Ví dụ tính tay 2: suy diễn mờ Sugeno với hai luật}
+
+Xét một đầu vào \(x\in\R\) và hai luật:
+\begin{align*}
+\text{Rule 1: } & \text{Nếu } x \text{ là LOW thì } y_1 = 1.0x + 0.5,\\
+\text{Rule 2: } & \text{Nếu } x \text{ là HIGH thì } y_2 = 2.0x - 0.2.
+\end{align*}
+Giả sử hai hàm thuộc Gaussian:
+\[
+\mu_{\mathrm{LOW}}(x)=\exp\left(-\frac{(x-0)^2}{2(1)^2}\right),
+\qquad
+\mu_{\mathrm{HIGH}}(x)=\exp\left(-\frac{(x-2)^2}{2(1)^2}\right).
+\]
+Lấy \(x=1\). Khi đó
+\[
+w_1=\mu_{\mathrm{LOW}}(1)=e^{-1/2},
+\qquad
+w_2=\mu_{\mathrm{HIGH}}(1)=e^{-1/2}.
+\]
+Do hai độ kích hoạt bằng nhau, sau chuẩn hóa ta có
+\[
+\bar{w}_1=\bar{w}_2=\frac{1}{2}.
+\]
+Phần hệ quả:
+\[
+y_1 = 1.0(1)+0.5=1.5,
+\qquad
+y_2 = 2.0(1)-0.2=1.8.
+\]
+Đầu ra cuối:
+\[
+y = \bar{w}_1 y_1 + \bar{w}_2 y_2 = \frac{1}{2}(1.5)+\frac{1}{2}(1.8)=1.65.
+\]
+
+Ví dụ này cho thấy trực giác của Sugeno: đầu ra không phải chọn duy nhất một luật, mà là trung bình mềm của các luật đang hoạt động. Khi nhiều luật cùng kích hoạt, dự báo cuối là kết quả pha trộn cục bộ.
+
+\section{Ví dụ tính tay 3: ANFIS hai đầu vào, bốn luật}
+
+Xét hai đầu vào \(x_1,x_2\), mỗi đầu vào có hai nhãn LOW và HIGH. Khi đó có bốn luật:
+\begin{align*}
+R_1 &: (x_1 \text{ LOW}, x_2 \text{ LOW}),\\
+R_2 &: (x_1 \text{ LOW}, x_2 \text{ HIGH}),\\
+R_3 &: (x_1 \text{ HIGH}, x_2 \text{ LOW}),\\
+R_4 &: (x_1 \text{ HIGH}, x_2 \text{ HIGH}).
+\end{align*}
+Nếu dùng tích làm T-norm, độ kích hoạt là
+\[
+w_1=\mu_{L1}(x_1)\mu_{L2}(x_2),\quad
+w_2=\mu_{L1}(x_1)\mu_{H2}(x_2),\quad
+w_3=\mu_{H1}(x_1)\mu_{L2}(x_2),\quad
+w_4=\mu_{H1}(x_1)\mu_{H2}(x_2).
+\]
+Giả sử mỗi luật có hệ quả affine
+\[
+f_r(x_1,x_2)=p_{r0}+p_{r1}x_1+p_{r2}x_2.
+\]
+Khi đó đầu ra cuối là
+\[
+y=\sum_{r=1}^4 \bar{w}_r f_r(x_1,x_2),
+\qquad
+\bar{w}_r=\frac{w_r}{\sum_{s=1}^4 w_s}.
+\]
+
+Điều đáng chú ý ở đây là phần phi tuyến của mô hình nằm trọn trong \(\bar{w}_r\), còn phần hệ quả là tuyến tính. Đây chính là lý do ANFIS có thể tận dụng bình phương tối thiểu ở một nửa bài toán.
+
+\section{Quy trình chuẩn cho dữ liệu chuỗi thời gian có ANFIS và học sâu}
+
+Ta viết ra quy trình chuẩn dưới dạng tuần tự, rồi phân tích lý do.
+
+\subsection{Bước 1: xác định mục tiêu thật rõ}
+
+Ta phải chốt chính xác biến mục tiêu là gì. Là giá tuyệt đối? Là tỷ suất đơn giản? Là log-return? Là dự báo một bước hay nhiều bước? Là trực tiếp dự báo \((O,H,L,C)\) hay dự báo một biểu diễn khác rồi quy đổi?
+
+Nếu câu hỏi này mờ, toàn bộ những bước sau sẽ mang tính ứng biến. Trong script đã phân tích, biến mục tiêu thực tế là bốn tỷ lệ của \(\text{Open}_{t+1}, \text{High}_{t+1}, \text{Low}_{t+1}, \text{Close}_{t+1}\) so với \(\text{Close}_t\). Chỉ riêng việc nói thật rõ điều đó đã giúp ta nhìn ra những điểm không nhất quán trong diễn giải.
+
+\subsection{Bước 2: tách dữ liệu theo thời gian trước khi học bất kỳ biến đổi nào}
+
+Trật tự đúng là:
+
+\begin{enumerate}
+\item tạo các hàng dữ liệu thời gian hợp lệ;
+\item tạo cửa sổ;
+\item tách thành tập huấn luyện, tập thẩm định, tập kiểm tra theo thời gian;
+\item chỉ sau đó mới fit bộ chuẩn hóa trên tập huấn luyện.
+\end{enumerate}
+
+Điều này nghe có vẻ nhỏ, nhưng đây chính là đường ranh giữa một thí nghiệm có giá trị và một thí nghiệm bị rò rỉ thông tin.
+
+\subsection{Bước 3: khởi tạo khối mờ trên tập huấn luyện}
+
+Nếu dùng K-Means để khởi tạo tâm của hàm thuộc, K-Means phải được fit trên tập huấn luyện sau khi chuẩn hóa bằng thống kê của tập huấn luyện. Không được phép dùng tập thẩm định hay tập kiểm tra trong bước này.
+
+\subsection{Bước 4: huấn luyện với tập thẩm định đúng nghĩa}
+
+Mọi cơ chế ra quyết định trong quá trình học, bao gồm dừng sớm, giảm tốc độ học, chọn \emph{seed}, chọn số lượng hàm thuộc, chọn số lớp LSTM, đều phải dựa trên tập thẩm định.
+
+\subsection{Bước 5: khóa mô hình rồi mới động đến tập kiểm tra}
+
+Khi mọi quyết định đã khóa, ta mới báo cáo kết quả trên tập kiểm tra. Tập kiểm tra không phải là nơi để ``xem thử rồi chỉnh tiếp''.
+
+\section{Mã giả cho quy trình sửa của script}
+
+\begin{verbatim}
+1. load raw dataframe
+2. build features and targets using only information up to time t
+3. build rolling windows
+4. split windows chronologically into train / val / test
+5. fit feature_scaler on train only
+6. fit target_scaler on train only
+7. transform train / val / test using those fitted scalers
+8. compute K-Means centers on train only
+9. train model on train, monitor val
+10. choose best checkpoint using val only
+11. evaluate test once
+12. export metrics + rule antecedents + rule consequents + error cases
+\end{verbatim}
+
+Mã giả này trông thô, nhưng nó chính là xương sống của tính đáng tin trong thí nghiệm.
+
+\section{Khung sửa mô hình để giữ ràng buộc OHLC}
+
+Nếu mục tiêu là dự báo một bộ giá trị OHLC hợp lệ, ta cần biến đổi cách tham số hóa đầu ra.
+
+\subsection{Phương án 1: dự báo \((O,C,\Delta_H,\Delta_L)\)}
+
+Ta dự báo
+\[
+\hat{O}_{t+1},\qquad \hat{C}_{t+1},\qquad \widehat{\Delta_H}_{t+1}\ge 0,\qquad \widehat{\Delta_L}_{t+1}\ge 0,
+\]
+rồi đặt
+\[
+\hat{H}_{t+1} = \max(\hat{O}_{t+1},\hat{C}_{t+1}) + \widehat{\Delta_H}_{t+1},
+\]
+\[
+\hat{L}_{t+1} = \min(\hat{O}_{t+1},\hat{C}_{t+1}) - \widehat{\Delta_L}_{t+1}.
+\]
+Để ép không âm, có thể dùng \(\mathrm{softplus}\) ở hai đầu ra \(\Delta_H,\Delta_L\).
+
+\subsection{Phương án 2: thêm số hạng phạt vào hàm mất mát}
+
+Nếu vẫn muốn dự báo trực tiếp bốn giá trị, ta có thể thêm
+\[
+\mathcal{L}_{\mathrm{valid}} =
+\lambda_1 \,\mathrm{ReLU}\big(\max(\hat{O},\hat{C})-\hat{H}\big)
++
+\lambda_2 \,\mathrm{ReLU}\big(\hat{L}-\min(\hat{O},\hat{C})\big).
+\]
+Hàm mất mát tổng sẽ là
+\[
+\mathcal{L}=\mathcal{L}_{\mathrm{forecast}}+\mathcal{L}_{\mathrm{valid}}.
+\]
+Phương án này mềm hơn nhưng không đảm bảo tuyệt đối nếu \(\lambda_1,\lambda_2\) không đủ lớn.
+
+\section{Khung sửa mô hình để giữ nghĩa của nhãn LOW/HIGH}
+
+Một lỗi diễn giải quan trọng trong script là nhãn LOW/HIGH có thể đổi nghĩa sau huấn luyện. Có nhiều cách sửa.
+
+\subsection{Cách 1: tham số hóa có thứ tự}
+
+Thay vì học hai tâm \(c_1,c_2\) độc lập, ta đặt
+\[
+c_1 = a,\qquad c_2 = a + \mathrm{softplus}(d),
+\]
+trong đó \(a,d\) là tham số tự do. Khi đó luôn có \(c_2\ge c_1\). Nhãn LOW/HIGH được giữ ổn định về thứ tự.
+
+\subsection{Cách 2: sắp xếp lại sau mỗi vòng cập nhật}
+
+Cách này đơn giản hơn nhưng kém trơn hơn: sau mỗi bước hoặc mỗi epoch, sắp xếp lại các tâm theo thứ tự tăng dần và hoán vị các tham số liên quan. Tuy nhiên, việc hoán vị này cần làm rất cẩn thận để không phá vỡ liên kết với hệ quả và mô tả luật.
+
+\section{Khung sửa phần trích xuất luật}
+
+Muốn thật sự có giá trị diễn giải, phần trích xuất luật phải gồm cả tiền đề và hệ quả. Với mỗi luật \(r\) và mỗi đầu ra \(k\), ta nên ghi rõ:
+\[
+\text{IF } \cdots \text{ THEN } y_k = a_{r0}^{(k)} + a_{r1}^{(k)}x_1 + \cdots + a_{rd}^{(k)}x_d.
+\]
+Ngoài ra, ta còn nên ghi:
+
+\begin{enumerate}
+\item tâm và độ rộng hiện tại của từng hàm thuộc;
+\item mức kích hoạt trung bình của luật trên tập huấn luyện/thẩm định;
+\item độ đóng góp trung bình của luật vào mỗi đầu ra.
+\end{enumerate}
+
+Như vậy mới có thể nói đến phân tích luật một cách nghiêm túc.
+
+\section{Một ví dụ về báo cáo lỗi tốt hơn cho mô hình}
+
+Thay vì chỉ báo cáo ``Close \(R^2=0.98\)'', một báo cáo tử tế hơn nên có ít nhất các nhóm mục sau.
+
+\subsection{Nhóm 1: chỉ số dự báo}
+
+RMSE, MAE, MAPE, \(R^2\), độ chính xác hướng, trên tập thẩm định và tập kiểm tra, với mô tả rõ ràng về biến mục tiêu.
+
+\subsection{Nhóm 2: chỉ số hợp lệ cấu trúc}
+
+Tỷ lệ mẫu vi phạm \(\hat{H}<\max(\hat{O},\hat{C})\), tỷ lệ mẫu vi phạm \(\hat{L}>\min(\hat{O},\hat{C})\), và phân bố độ vi phạm.
+
+\subsection{Nhóm 3: chỉ số diễn giải}
+
+Các luật kích hoạt nhiều nhất, hệ số hệ quả quan trọng nhất, mức ổn định của các tâm hàm thuộc qua nhiều lần huấn luyện.
+
+\subsection{Nhóm 4: chỉ số phương pháp luận}
+
+Tập nào được dùng để fit bộ chuẩn hóa, tập nào được dùng cho dừng sớm, số lần chạy, và cách chọn mô hình cuối.
+
+Khi báo cáo được tổ chức như vậy, nhiều ảo giác thành tích sẽ tự biến mất.
+
+\section{Một lời nhắc cuối về tinh thần học}
+
+Phụ lục này khép lại tài liệu bằng một thái độ quan trọng hơn cả công thức: hãy luôn hỏi mô hình đang \emph{học cái gì}, đang \emph{được đánh giá như thế nào}, và đang \emph{được kể lại trung thực đến đâu}. Người mới thường nghĩ học máy khó vì có nhiều công thức. Thực ra, phần khó hơn nhiều là giữ được tính trung thực trí tuệ khi một kết quả đẹp xuất hiện trước mắt.
+
+Nếu bạn giữ được thái độ đó, bạn sẽ không chỉ học được nhiều mô hình hơn, mà còn tránh được rất nhiều sai lầm mà người khác có thể mất nhiều tháng mới nhìn ra.

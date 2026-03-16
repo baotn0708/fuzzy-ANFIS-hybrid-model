@@ -1,0 +1,312 @@
+\chapter{ANFIS: kiến trúc, học tham số và những giới hạn}
+
+\section{ANFIS là gì nếu nói thật chặt}
+
+Tên đầy đủ của ANFIS là \emph{Adaptive-Network-Based Fuzzy Inference System}, nghĩa là một hệ suy diễn mờ được biểu diễn dưới dạng mạng thích nghi. Cách nói này nghe khá rộng, nhưng với ANFIS kinh điển của Jang \citep{jang1993anfis}, ta có thể phát biểu chặt hơn:
+
+\begin{quote}
+ANFIS là một cách tham số hóa hệ Sugeno bậc 1 sao cho các tham số tiền đề và tham số hệ quả có thể được học từ dữ liệu bằng sự kết hợp giữa bình phương tối thiểu và hạ dốc theo gradient.
+\end{quote}
+
+Phát biểu này quan trọng vì nó bóc bỏ hai ngộ nhận phổ biến.
+
+\begin{enumerate}
+\item ANFIS không đơn giản chỉ là ``fuzzy logic cộng với neural network'' như một khẩu hiệu.
+\item ANFIS không phải bất kỳ mô hình nào có một lớp mờ ở đâu đó trong mạng.
+\end{enumerate}
+
+Nếu một mô hình chỉ dùng các hàm thuộc để tạo đặc trưng rồi đẩy qua một khối học sâu không còn giữ cấu trúc Sugeno, thì đó có thể là một mô hình lai fuzzy--deep, nhưng không còn là ANFIS theo nghĩa cổ điển nữa.
+
+\section{Mẫu hai đầu vào, hai luật: nơi mọi công thức của ANFIS lộ ra rõ nhất}
+
+Hãy xét trường hợp đơn giản nhất với hai đầu vào \(x,y\) và hai luật:
+\begin{align*}
+R_1:\quad & \text{Nếu } x \text{ là } A_1 \text{ và } y \text{ là } B_1
+\text{ thì } f_1=p_1x+q_1y+r_1,\\
+R_2:\quad & \text{Nếu } x \text{ là } A_2 \text{ và } y \text{ là } B_2
+\text{ thì } f_2=p_2x+q_2y+r_2.
+\end{align*}
+Đặt
+\[
+w_1=\mu_{A_1}(x)\mu_{B_1}(y),
+\qquad
+w_2=\mu_{A_2}(x)\mu_{B_2}(y).
+\]
+Sau chuẩn hóa:
+\[
+\bar{w}_1=\frac{w_1}{w_1+w_2},
+\qquad
+\bar{w}_2=\frac{w_2}{w_1+w_2}.
+\]
+Đầu ra cuối là
+\[
+f=\bar{w}_1 f_1+\bar{w}_2 f_2.
+\]
+
+Từ ví dụ nhỏ này, toàn bộ bản chất của ANFIS hiện ra:
+
+\begin{enumerate}
+\item phần mờ nằm trong các \(\mu\) và \(w_r\);
+\item phần tuyến tính cục bộ nằm trong \(f_r\);
+\item phần phi tuyến toàn cục xuất hiện do trọng số \(\bar{w}_r\) phụ thuộc vào đầu vào.
+\end{enumerate}
+
+\section{Năm lớp của ANFIS và ý nghĩa thật của từng lớp}
+
+ANFIS kinh điển được mô tả bằng năm lớp. Nhưng mô tả hình thức chỉ có giá trị nếu ta hiểu mỗi lớp đang làm gì về mặt toán học.
+
+\subsection{Lớp 1: làm mờ hóa}
+
+Mỗi nút tính độ thuộc của một đầu vào với một nhãn mờ. Nếu dùng Gaussian:
+\[
+O_{1,i}=\mu_i(x)=\exp\left(-\frac{(x-c_i)^2}{2\sigma_i^2}\right).
+\]
+Các tham số \((c_i,\sigma_i)\) là tham số tiền đề. Về bản chất, lớp này quyết định cách ta phân vùng mềm miền đầu vào.
+
+\subsection{Lớp 2: kích hoạt luật}
+
+Mỗi nút tương ứng với một luật:
+\[
+O_{2,r}=w_r=\prod_j \mu_{A_j^r}(x_j).
+\]
+Đây là nơi các khái niệm mờ riêng lẻ được kết hợp thành một chế độ cục bộ có ý nghĩa tổng hợp.
+
+\subsection{Lớp 3: chuẩn hóa}
+
+\[
+O_{3,r}=\bar{w}_r=\frac{w_r}{\sum_s w_s}.
+\]
+Lớp này biến độ kích hoạt thành các trọng số chuẩn hóa. Nhờ đó, đầu ra cuối mang cấu trúc của một tổ hợp mềm giữa các mô hình cục bộ.
+
+\subsection{Lớp 4: hệ quả}
+
+Mỗi nút tính
+\[
+O_{4,r}=\bar{w}_r f_r
+=
+\bar{w}_r\left(p_{r0}+\sum_j p_{rj}x_j\right).
+\]
+Đây là nơi tri thức mờ gặp mô hình tuyến tính cục bộ.
+
+\subsection{Lớp 5: tổng hợp}
+
+\[
+O_{5,1}=\sum_r O_{4,r}.
+\]
+Lớp cuối cộng tất cả đóng góp cục bộ để tạo đầu ra toàn cục.
+
+\section{Điều gì làm ANFIS đẹp về mặt toán học}
+
+Có ba lý do khiến ANFIS đẹp một cách khác thường.
+
+\subsection{Lý do thứ nhất: nó là mô hình cục bộ hóa có cấu trúc}
+
+ANFIS không cố học một hàm phi tuyến toàn cục một cách trực tiếp. Nó nói: hãy chia không gian đầu vào thành các vùng mờ, rồi trong mỗi vùng học một mô hình tuyến tính cục bộ. Điều này vừa linh hoạt hơn một mô hình tuyến tính toàn cục, vừa dễ kiểm soát hơn một mạng sâu hoàn toàn không cấu trúc.
+
+\subsection{Lý do thứ hai: một nửa bài toán có dạng tuyến tính}
+
+Khi các tham số tiền đề được cố định, mô hình trở thành tuyến tính theo các hệ số hệ quả. Đây là chìa khóa mở ra thuật toán học lai.
+
+\subsection{Lý do thứ ba: nó giữ được cầu nối diễn giải}
+
+Nếu các hàm thuộc và luật còn giữ nghĩa, ta có thể đọc ra các vùng hoạt động của mô hình. Đây là điều nhiều kiến trúc học sâu thuần túy không có.
+
+\section{Học lai của ANFIS: suy ra từ dạng tuyến tính của hệ quả}
+
+Giả sử dữ liệu huấn luyện là \(\{(\bm{x}_i,y_i)\}_{i=1}^n\). Với mỗi mẫu \(\bm{x}_i\), nếu phần tiền đề được cố định, ta tính được các \(\bar{w}_{ir}\). Khi đó
+\[
+\hat{y}_i
+=
+\sum_{r=1}^R
+\bar{w}_{ir}
+\left(
+p_{r0}+\sum_{j=1}^d p_{rj}x_{ij}
+\right).
+\]
+Gộp tất cả các hệ số \(p_{r0},p_{r1},\dots,p_{rd}\) thành một vectơ lớn \(\bm{\beta}\), ta viết được
+\[
+\hat{\bm{y}}=A\bm{\beta}.
+\]
+Trong đó ma trận \(A\) được tạo bằng cách xếp các đặc trưng đã nhân với trọng số chuẩn hóa:
+\[
+A_i=
+\big[
+\bar{w}_{i1},
+\bar{w}_{i1}x_{i1},
+\dots,
+\bar{w}_{i1}x_{id},
+\bar{w}_{i2},
+\dots,
+\bar{w}_{iR}x_{id}
+\big].
+\]
+Khi đó bài toán học hệ quả là
+\[
+\min_{\bm{\beta}}\|A\bm{\beta}-\bm{y}\|_2^2.
+\]
+Đây là một bài toán bình phương tối thiểu thuần túy.
+
+\subsection{Ý nghĩa của điều này}
+
+ANFIS không cần dùng gradient cho mọi thứ. Nó chỉ cần gradient cho phần tiền đề. Phần hệ quả có thể được cập nhật bằng một lời giải đóng hoặc gần đóng của bình phương tối thiểu. Điều này làm cho ANFIS khác nhiều so với các lớp tùy biến fuzzy viết trong các framework hiện đại nhưng huấn luyện hoàn toàn bằng lan truyền ngược.
+
+\section{Ma trận hóa của phần hệ quả và mối liên hệ với hồi quy tuyến tính}
+
+Để thấy ANFIS không thần bí, ta hãy so sánh nó với hồi quy tuyến tính. Trong hồi quy tuyến tính, mỗi mẫu \(\bm{x}_i\) sinh ra một hàng của ma trận thiết kế:
+\[
+[1,\ x_{i1},\dots,x_{id}].
+\]
+Trong ANFIS, mỗi mẫu sinh ra một hàng lớn hơn nhiều:
+\[
+[\bar{w}_{i1},\ \bar{w}_{i1}x_{i1},\dots,\bar{w}_{i1}x_{id},\ \bar{w}_{i2},\dots].
+\]
+Về bản chất, ANFIS đang thực hiện một dạng mở rộng đặc trưng phụ thuộc dữ liệu, trong đó các trọng số mờ đóng vai trò ``bật tắt mềm'' những đặc trưng cục bộ. Đây là một cách hiểu cực kỳ hữu ích, vì nó đặt ANFIS vào cùng dòng tư duy với biểu diễn đặc trưng và mô hình cục bộ trong học máy.
+
+\section{Đạo hàm của phần tiền đề và động học học}
+
+Nếu dùng Gaussian
+\[
+\mu(x;c,\sigma)=\exp\left(-\frac{(x-c)^2}{2\sigma^2}\right),
+\]
+ta có
+\[
+\frac{\partial \mu}{\partial c}
+=
+\mu(x;c,\sigma)\frac{x-c}{\sigma^2},
+\qquad
+\frac{\partial \mu}{\partial \sigma}
+=
+\mu(x;c,\sigma)\frac{(x-c)^2}{\sigma^3}.
+\]
+Hai công thức này cho thấy ba điều.
+
+\begin{enumerate}
+\item Nếu \(\mu\) quá nhỏ, gradient cũng rất nhỏ.
+\item Nếu \(\sigma\) quá lớn, hàm thuộc gần phẳng và gradient không còn định vị tốt.
+\item Nếu \(\sigma\) quá nhỏ, hệ quá nhọn, dễ sinh vùng chết hoặc bất ổn.
+\end{enumerate}
+
+Đây là lý do tại sao việc khởi tạo và điều chuẩn các hàm thuộc không thể xem là chi tiết phụ.
+
+\section{Khởi tạo các hàm thuộc: vì sao phân cụm thường được dùng}
+
+Nếu khởi tạo tâm và độ rộng hoàn toàn ngẫu nhiên, ANFIS có thể bắt đầu từ một phân hoạch rất nghèo nàn của không gian đầu vào. Một số luật gần như không bao giờ kích hoạt; một số khác chồng lấp quá mạnh; tổng độ kích hoạt ở nhiều vùng rất nhỏ. Điều này gây hại cả cho tối ưu lẫn cho diễn giải.
+
+Phân cụm, đặc biệt là K-Means một chiều theo từng đặc trưng, được dùng vì nó cho ta các tâm ban đầu gắn với mật độ dữ liệu. Tuy nhiên, có hai điều phải nói thật:
+
+\begin{enumerate}
+\item phân cụm không tạo ra ``nghĩa ngôn ngữ'' một cách tự động; nó chỉ tạo ra cấu trúc dữ liệu ban đầu;
+\item nếu các tâm được phép học tự do sau đó, nghĩa LOW/HIGH vẫn có thể bị đảo.
+\end{enumerate}
+
+\section{Bùng nổ số luật: bài toán trung tâm của ANFIS}
+
+Nếu có \(d\) đặc trưng và mỗi đặc trưng có \(m\) hàm thuộc, số luật kiểu lưới là
+\[
+R=m^d.
+\]
+Với \(d=10\) và \(m=3\), ta có
+\[
+R=59049.
+\]
+Không chỉ số luật tăng nhanh, số tham số hệ quả cũng tăng theo \(R(d+1)\). Đây là lý do ANFIS nguyên thủy khó mở rộng lên không gian đặc trưng lớn.
+
+\subsection{Các chiến lược giảm}
+
+Những chiến lược phổ biến gồm:
+
+\begin{enumerate}
+\item giảm số đặc trưng vào khối mờ;
+\item chia thành nhiều ANFIS nhỏ theo nhóm đặc trưng;
+\item sinh luật bằng phân cụm thay vì lưới toàn phần;
+\item dùng hệ mờ phân cấp;
+\item dùng điều chuẩn thưa để triệt bớt luật.
+\end{enumerate}
+
+Đây là lý do phương án \emph{feature-group ANFIS} trong script có một ý tưởng đáng ghi nhận: nó đối mặt trực diện với bùng nổ số luật.
+
+\section{ANFIS nhiều đầu ra: tiện nhưng làm diễn giải khó hơn}
+
+Trong ANFIS gốc, ta thường mô tả một đầu ra duy nhất. Trong thực hành, đặc biệt với thư viện học sâu, người ta có thể cho mỗi luật sinh ra một vectơ đầu ra:
+\[
+f_r(\bm{x})\in\R^k.
+\]
+Điều này tiện cho dự báo nhiều biến đồng thời. Nhưng nó cũng làm phần hệ quả khó đọc hơn, vì mỗi luật không còn cho một phương trình cục bộ duy nhất, mà cho một bó phương trình cục bộ. Nếu không thiết kế công cụ trích xuất cẩn thận, khả năng diễn giải suy giảm rất nhanh.
+
+\section{ANFIS và tính diễn giải: cần những điều kiện nào}
+
+Ta có thể gọi ANFIS là dễ diễn giải chỉ khi ít nhất các điều kiện sau được giữ:
+
+\begin{enumerate}
+\item nhãn của các hàm thuộc còn khớp với vị trí thật của các hàm thuộc;
+\item số luật không vượt quá ngưỡng mà con người có thể đọc;
+\item phần hệ quả được trích xuất và mô tả đầy đủ;
+\item đầu ra cuối của mô hình vẫn chủ yếu đi qua cơ chế luật đó.
+\end{enumerate}
+
+Nếu một mô hình chỉ giữ được điều kiện thứ nhất và thứ hai, nhưng hệ quả không được đọc ra, hoặc đầu ra cuối bị một khối khác pha trộn mạnh, thì việc gọi cả mô hình là ``giải thích được'' là một cường điệu.
+
+\section{Tính nhận dạng, hoán vị luật và sự mong manh của giải thích}
+
+Một khó khăn bản chất của ANFIS là nhiều cấu hình tham số khác nhau có thể mô tả hàm gần giống nhau. Ta có thể hoán vị thứ tự các luật mà hàm đầu ra không đổi. Ta cũng có thể đổi chỗ các hàm thuộc kèm theo hoán vị hệ quả. Do đó, ngay cả khi ANFIS học tốt về dự báo, tham số học được không phải lúc nào cũng có một cách đọc duy nhất.
+
+Điều này có hai hệ quả sư phạm quan trọng:
+
+\begin{enumerate}
+\item không nên thần thoại hóa việc ``đọc tham số'' như thể đó là sự thật duy nhất về mô hình;
+\item muốn diễn giải đáng tin, ta phải thêm các ràng buộc nhận dạng, ví dụ giữ thứ tự tâm, giữ cấu trúc phân hoạch, hoặc áp đặt các điều kiện trơn phù hợp.
+\end{enumerate}
+
+\section{ANFIS trong framework học sâu hiện đại: lợi và hại}
+
+Khi triển khai ANFIS trong TensorFlow hay PyTorch, ta thường viết một lớp tùy biến, cho phép ghép ANFIS với CNN, LSTM, hay \emph{transformer}. Điều này mở ra rất nhiều khả năng kiến trúc, nhưng đồng thời tạo ra ba rủi ro.
+
+\subsection{Rủi ro thứ nhất: mất học lai}
+
+Vì tiện lập trình, người ta dễ huấn luyện toàn bộ bằng lan truyền ngược. Khi đó ANFIS không còn tận dụng lợi thế cấu trúc của bình phương tối thiểu ở phần hệ quả.
+
+\subsection{Rủi ro thứ hai: giữ bề ngoài mà mất bản chất}
+
+Một khối fuzzy nhỏ được gắn vào đâu đó trong mạng có thể làm mô hình trông ``có mờ''. Nhưng nếu đầu ra cuối không còn đi qua phép tổng hợp Sugeno một cách chi phối, thì mô hình đã rời xa bản chất ANFIS.
+
+\subsection{Rủi ro thứ ba: nhầm diễn giải cục bộ với diễn giải toàn cục}
+
+Ta có thể trích xuất luật của một nhánh, nhưng đầu ra cuối lại do cả một kiến trúc sâu pha trộn. Khi đó, luật mờ chỉ giải thích được một phần biểu diễn trung gian, không giải thích được toàn bộ hệ thống.
+
+\section{Khi nào không nên dùng ANFIS}
+
+ANFIS không phải công cụ cho mọi tình huống. Có ít nhất bốn bối cảnh mà ta nên thận trọng:
+
+\begin{enumerate}
+\item số đặc trưng quá lớn và không thể giảm hợp lý;
+\item dữ liệu quá ít, không đủ để ước lượng nhiều mô hình cục bộ;
+\item miền bài toán không có ý nghĩa ngôn ngữ rõ ràng cho các đặc trưng;
+\item đầu ra cuối cùng đòi hỏi cấu trúc rất phức tạp mà vài chục hay vài trăm luật khó bao quát.
+\end{enumerate}
+
+Trong các bối cảnh này, hoặc ta phải đơn giản hóa đầu vào, hoặc ta nên chọn một kiến trúc khác phù hợp hơn.
+
+\section{Những lỗi lập trình ANFIS hay gặp và vì sao chúng không nhỏ}
+
+Ta có thể liệt kê một số lỗi rất hay gặp:
+
+\begin{enumerate}
+\item không ép độ rộng dương;
+\item không bảo vệ phép chia khi tổng độ kích hoạt quá nhỏ;
+\item gán nhãn LOW/HIGH theo chỉ số cố định nhưng không giữ thứ tự tâm;
+\item chỉ trích xuất tiền đề của luật mà bỏ qua hệ quả;
+\item lưu mô hình nhưng không chuẩn bị cho việc tải lại lớp tùy biến;
+\item đánh đồng việc có hàm thuộc với việc mô hình đầu ra giải thích được.
+\end{enumerate}
+
+Những lỗi này không phải chuyện trình bày. Chúng chạm vào khả năng học, tính ổn định, khả năng lặp lại, và giá trị diễn giải của cả hệ thống.
+
+\section{ANFIS trong bài báo và ANFIS trong ứng dụng thực tế}
+
+Trong bài báo gốc, ANFIS thường được xét như một hệ mờ Sugeno khá thuần. Trong thực tế, nhất là trong mã nguồn ứng dụng, ANFIS dễ bị nhúng vào những kiến trúc lớn hơn. Điều này không sai. Vấn đề là ta phải trung thực trong cách gọi tên.
+
+Nếu một mô hình lấy đầu ra của ANFIS rồi tiếp tục pha trộn với LSTM và nhiều lớp \emph{Dense}, thì mô hình đó tốt nhất nên được gọi là \emph{hybrid model with ANFIS components} (mô hình lai có thành phần ANFIS), thay vì được mô tả như thể toàn bộ đầu ra cuối vẫn là kết quả trực tiếp của hệ ANFIS nguyên nghĩa.
+
+\section{Kết luận chương}
+
+ANFIS đẹp vì nó nằm giữa ba thế giới: logic mờ, mô hình cục bộ tuyến tính, và tối ưu học từ dữ liệu. Nhưng chính vì đứng giữa ba thế giới ấy, nó cũng dễ bị hiểu sai ở cả ba phía. Nếu chỉ nhìn nó như một mạng, ta bỏ mất cấu trúc mờ. Nếu chỉ nhìn nó như một hệ mờ, ta bỏ mất hình học của bài toán học. Nếu chỉ nhìn nó như công cụ diễn giải, ta dễ quên các điều kiện cần để diễn giải còn có nghĩa. Đây là lý do chương tiếp theo phải trở về một mô hình cụ thể trong code để xem những điều kiện ấy còn giữ được đến đâu.

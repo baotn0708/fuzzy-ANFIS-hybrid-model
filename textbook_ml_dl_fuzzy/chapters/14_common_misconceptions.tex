@@ -1,0 +1,237 @@
+\chapter{Những ngộ nhận thường gặp khi học ML, DL, logic mờ và ANFIS}
+
+\section{Ngộ nhận không chỉ là câu sai, mà là một khung nhìn sai}
+
+Điều làm ngộ nhận nguy hiểm không phải chỉ là nó dẫn tới một kết luận sai ở một chỗ cụ thể. Điều nguy hiểm hơn là nó thay cả bộ câu hỏi mà người học dùng để đọc mô hình. Khi khung nhìn đã sai, người học có thể nhìn đúng công thức mà vẫn rút ra kết luận sai, đơn giản vì họ đang hỏi nhầm điều cần hỏi.
+
+Ví dụ, nếu người học mang sẵn trong đầu mệnh đề ``mô hình càng phức tạp thì càng mạnh'', họ sẽ vô thức xem số tầng, số nhánh, số thành phần là bằng chứng thay cho giao thức đánh giá. Nếu người học tin rằng ``có fuzzy thì chắc chắn dễ giải thích'', họ sẽ dừng lại ở vài câu luật in ra, mà không kiểm tra xem đầu ra cuối có còn đi trực tiếp qua cơ chế luật đó hay không. Nếu người học cho rằng ``test score cao là đủ'', họ sẽ bỏ qua câu hỏi quan trọng hơn nhiều: test có còn là test theo đúng nghĩa phương pháp luận hay không.
+
+Vì vậy, chương này không viết như một bài cảnh báo chung chung. Mỗi cụm ngộ nhận dưới đây sẽ được bóc tách bằng ví dụ, phản ví dụ, hoặc một mệnh đề ngắn có chứng minh. Mục tiêu là để người đọc không chỉ nghe ``đừng nghĩ như thế'', mà thật sự thấy \emph{vì sao} cách nghĩ đó sai.
+
+\section{Cụm ngộ nhận thứ nhất: nhầm độ phức tạp kiến trúc và bảng chỉ số với sức mạnh khoa học}
+
+Ngộ nhận đầu tiên là xem độ phức tạp biểu diễn như bằng chứng đủ cho chất lượng khoa học. Điều đúng chỉ là: mô hình phức tạp hơn thường có không gian biểu diễn giàu hơn. Điều sai là: giàu hơn về biểu diễn đồng nghĩa với đáng tin hơn về kết luận.
+
+\begin{example}
+Xét hai mô hình cho cùng một bài toán dự báo chuỗi thời gian.
+
+Mô hình A là một hệ lai gồm BiLSTM, hai nhánh ANFIS, nhiều \emph{callbacks}, và khoảng 50\,000 tham số. Nhưng nó chuẩn hóa trên toàn bộ dữ liệu trước khi tách train/test và dùng test để dừng sớm.
+
+Mô hình B chỉ là một hồi quy tuyến tính có điều chuẩn với khoảng 30 tham số. Nhưng nó tách train/validation/test đúng theo thời gian, chỉ fit chuẩn hóa trên train, chọn siêu tham số trên validation, và chỉ đo test đúng một lần sau cùng.
+
+Nếu Mô hình A báo \(R^2=0.98\) còn Mô hình B báo \(R^2=0.91\), ta không được phép kết luận ngay rằng A ``khoa học hơn'' B. Con số 0.98 của A được sinh ra từ một giao thức đã hấp thụ thông tin từ test, nên ý nghĩa của nó không còn ngang với 0.91 của B. Đây là ví dụ điển hình cho việc độ phức tạp và chỉ số đẹp không tự động chuyển thành sức mạnh chứng cứ.
+\end{example}
+
+Ở đây người học thường phản biện: ``nhưng nếu mô hình học được rất tốt thì chắc vẫn có điều gì đó đúng''. Câu này chỉ đúng một phần nhỏ. Học được một hàm mất mát thấp chưa nói gì đủ mạnh về tính đúng đắn của bài toán, về tính sạch của giao thức, hay về khả năng dùng kết quả như bằng chứng ngoài mẫu.
+
+\begin{proposition}
+Giả sử \(\widehat s_1,\dots,\widehat s_m\) là các ước lượng ngẫu nhiên của cùng một chất lượng thật \(s\) trên cùng một tập test, và ta báo cáo
+\[
+\widehat s_{\max}=\max\{\widehat s_1,\dots,\widehat s_m\}.
+\]
+Nếu các \(\widehat s_i\) không gần như chắc chắn bằng nhau, thì
+\[
+\E[\widehat s_{\max}] \ge \E[\widehat s_i] = s,
+\]
+và bất đẳng thức là nghiêm ngặt trong nhiều trường hợp thông thường.
+\end{proposition}
+
+\begin{proof}
+Với mọi \(i\), ta luôn có
+\[
+\widehat s_{\max} \ge \widehat s_i.
+\]
+Lấy kỳ vọng hai vế cho từng \(i\), suy ra
+\[
+\E[\widehat s_{\max}] \ge \E[\widehat s_i].
+\]
+Nếu mỗi \(\widehat s_i\) là ước lượng không chệch của cùng đại lượng \(s\), thì \(\E[\widehat s_i]=s\). Do đó
+\[
+\E[\widehat s_{\max}] \ge s.
+\]
+Trong các trường hợp mà biến ngẫu nhiên \(\widehat s_{\max}\) có xác suất dương lớn hơn hẳn từng \(\widehat s_i\), bất đẳng thức sẽ là nghiêm ngặt.
+\end{proof}
+
+Mệnh đề trên giải thích rất trực tiếp vì sao việc chạy nhiều seed rồi chọn kết quả đẹp nhất trên cùng một test làm nảy sinh thiên lệch lạc quan. Không cần đến một lý thuyết quá sâu; chỉ riêng phép lấy cực đại đã đủ tạo ra thiên lệch hướng lên.
+
+\begin{example}
+Giả sử cùng một kiến trúc được huấn luyện với ba seed, và trên cùng tập test ta thu được \(R^2\) lần lượt là
+\[
+0.90,\qquad 0.93,\qquad 0.97.
+\]
+Nếu ta chỉ công bố 0.97 mà không nói nó là cực đại của ba lần thử, người đọc sẽ tưởng 0.97 là một đại diện trung thực cho hiệu năng điển hình. Trong khi đó, trung bình ba lần thử chỉ là
+\[
+\frac{0.90+0.93+0.97}{3}=0.933\overline{3}.
+\]
+Sự khác biệt giữa 0.97 và 0.933 không phải chỉ là ``một con số nhỏ''. Nó là khác biệt giữa \emph{kết quả đẹp nhất} và \emph{kết quả điển hình}.
+\end{example}
+
+Một ngộ nhận hẹp hơn nhưng rất phổ biến là nghĩ rằng \emph{data leakage} chỉ có nghĩa là đưa nhãn tương lai trực tiếp vào đầu vào. Với chuỗi thời gian, cách hiểu này quá hẹp.
+
+\begin{example}
+Xét chuỗi một chiều
+\[
+x_1=1,\quad x_2=2,\quad x_3=3,\quad x_4=100.
+\]
+Giả sử train là ba điểm đầu, test là điểm cuối.
+
+Nếu chuẩn hóa đúng cách trên train, ta có
+\[
+\mu_{\mathrm{train}}=\frac{1+2+3}{3}=2,\qquad
+\sigma_{\mathrm{train}}=\sqrt{\frac{(1-2)^2+(2-2)^2+(3-2)^2}{3}}=\sqrt{\frac{2}{3}}.
+\]
+Do đó
+\[
+\widetilde x_1^{(\mathrm{train})}=\frac{1-2}{\sqrt{2/3}},\qquad
+\widetilde x_2^{(\mathrm{train})}=0,\qquad
+\widetilde x_3^{(\mathrm{train})}=\frac{1}{\sqrt{2/3}}.
+\]
+
+Nếu chuẩn hóa sai trên toàn bộ dữ liệu, ta có
+\[
+\mu_{\mathrm{all}}=\frac{1+2+3+100}{4}=26.5.
+\]
+Rõ ràng mọi điểm train lúc này bị đặt trong một hệ quy chiếu đã hấp thụ giá trị 100 của tương lai. Dù nhãn tương lai không bị đưa thẳng vào đầu vào, thông tin tương lai vẫn đã đi vào pipeline qua thống kê chuẩn hóa.
+\end{example}
+
+Ví dụ trên cho thấy leakage không nhất thiết xuất hiện dưới dạng một cột nhãn bị chép nhầm vào đặc trưng. Nó có thể đến từ các phép biến đổi tưởng như vô hại nhưng được fit sai thời điểm.
+
+\section{Cụm ngộ nhận thứ hai: nhầm logic mờ với xác suất, và nhầm sự hiện diện của luật với khả năng diễn giải}
+
+Ngộ nhận ở vùng này thường có hai tầng. Tầng thứ nhất là nhầm giá trị hàm thuộc với xác suất. Tầng thứ hai là nhầm việc ``có luật mờ'' với việc ``đầu ra cuối giải thích được''.
+
+\begin{example}
+Phát biểu ``xác suất ngày mai mưa là 0.8'' nói về một biến cố ngẫu nhiên chưa xảy ra. Phát biểu ``nhiệt độ \(31^\circ\mathrm{C}\) thuộc khái niệm nóng ở mức 0.8'' nói về một giá trị đã quan sát, và đo mức độ phù hợp của nó với nhãn ngôn ngữ `nóng'.
+
+Hai phát biểu này cùng dùng số 0.8, nhưng một bên là xác suất của biến cố, một bên là độ thuộc của khái niệm. Nếu ta thay thế câu thứ hai bằng ``xác suất 31 độ C là nóng bằng 0.8'', thì câu nói đã đổi nghĩa hoàn toàn. Nó không còn là logic mờ nữa, mà là một thứ lai tạp mơ hồ giữa xác suất và ngôn ngữ.
+\end{example}
+
+Phân biệt này không phải chuyện triết học mơ hồ. Nó tác động trực tiếp đến cách ta đọc luật mờ. Khi một luật nói ``IF return is HIGH'', nó không nói ``xác suất return nằm trong vùng HIGH là bao nhiêu''. Nó nói giá trị return hiện tại phù hợp với khái niệm HIGH ở mức nào.
+
+Sai lầm thứ hai còn phổ biến hơn: thấy luật thì tưởng đã có giải thích.
+
+\begin{example}
+Giả sử một luật Sugeno có dạng
+\[
+\text{IF } x_1 \text{ is LOW AND } x_2 \text{ is HIGH THEN } y = 0.1 + 3x_1 - 2x_2.
+\]
+Nếu ta chỉ in ra phần
+\[
+\text{IF } x_1 \text{ is LOW AND } x_2 \text{ is HIGH},
+\]
+thì ta mới biết vùng nào của không gian đầu vào đang được nói tới. Ta chưa biết khi luật kích hoạt thì đầu ra bị kéo lên hay kéo xuống, mạnh hay yếu, phụ thuộc tuyến tính ra sao vào \(x_1,x_2\). Nói rằng ``đã giải thích được luật'' trong tình huống này là quá sớm.
+\end{example}
+
+Một lớp ngộ nhận sâu hơn nữa là nghĩ rằng chỉ cần gắn hai nhãn LOW/HIGH cho hai Gaussian thì nhãn ngôn ngữ ấy sẽ còn đúng sau khi huấn luyện.
+
+\begin{example}
+Giả sử ban đầu ta khởi tạo hai tâm
+\[
+c_{\mathrm{LOW}}=-1,\qquad c_{\mathrm{HIGH}}=1.
+\]
+Ban đầu, cách đặt tên này có ý nghĩa.
+
+Nhưng sau khi học tự do, mô hình có thể cập nhật thành
+\[
+c_{\mathrm{LOW}}=0.8,\qquad c_{\mathrm{HIGH}}=-0.2.
+\]
+Nếu ta vẫn tiếp tục in luật ``return is LOW'' cho Gaussian đầu tiên chỉ vì nó mang chỉ số 0, thì chữ LOW đã không còn là `thấp' theo nghĩa ngôn ngữ nữa. Nó chỉ còn là tên của một tham số.
+\end{example}
+
+Ví dụ này giải thích vì sao trong các hệ mờ học bằng gradient, tính diễn giải cần được \emph{bảo vệ bằng ràng buộc cấu trúc}. Nếu không có ràng buộc, nhãn ngôn ngữ rất dễ trượt thành nhãn kỹ thuật.
+
+Ngộ nhận về diễn giải còn gắn liền với bài toán đầu ra có cấu trúc, như OHLC.
+
+\begin{example}
+Giả sử mô hình dự báo
+\[
+\widehat O = 100,\qquad
+\widehat C = 102,\qquad
+\widehat H = 101,\qquad
+\widehat L = 99.
+\]
+Khi đó
+\[
+\widehat H = 101 < \max\{\widehat O,\widehat C\}=102.
+\]
+Bộ dự báo này vi phạm hình học của một cây nến giá hợp lệ, mặc dù từng thành phần riêng lẻ có thể vẫn gần với giá thật theo RMSE hoặc MAE.
+\end{example}
+
+Ví dụ này cho thấy một bài học quan trọng: một mô hình có thể ``đúng theo từng tọa độ'' mà vẫn ``sai theo cấu trúc''. Nếu người học chỉ nhìn các chỉ số riêng lẻ mà không kiểm tra ràng buộc hình học của đầu ra, họ sẽ đánh giá quá cao chất lượng thực sự của mô hình.
+
+Cuối cùng, ở vùng này còn một phản ứng quá tay khác: cứ thấy BiLSTM là kết luận ngay ``nhìn vào tương lai''.
+
+\begin{example}
+Giả sử tại thời điểm \(t\), ta có trọn vẹn cửa sổ quá khứ
+\[
+(x_{t-59},x_{t-58},\dots,x_t).
+\]
+Một BiLSTM xử lý chuỗi này theo hai hướng: từ \(x_{t-59}\) đến \(x_t\), và từ \(x_t\) ngược về \(x_{t-59}\). Cả hai hướng đều chỉ đi trong tập thông tin đã biết tại thời điểm dự báo. Vì vậy, bản thân BiLSTM trong tình huống này không tự động gây leakage.
+\end{example}
+
+Điều nên phê bình ở đây không phải là ``nhìn vào tương lai thật'', mà là việc diễn giải động học trở nên khó hơn và mô hình có thêm độ tự do biểu diễn. Phân biệt như vậy giúp người học không đi từ ngộ nhận này sang ngộ nhận ngược lại.
+
+\section{Cụm ngộ nhận thứ ba: nhầm dáng vẻ học thuật, trích dẫn và khả năng chạy một lần với chiều sâu thật sự}
+
+Ngộ nhận cuối cùng ít ồn ào hơn nhưng lại rất dai: cứ nhiều thuật ngữ tiếng Anh, nhiều trích dẫn, nhiều tên bài báo nổi tiếng thì nội dung tự khắc sâu. Sự thật là thuật ngữ và trích dẫn chỉ có giá trị khi chúng được gắn với một cơ chế giải thích cụ thể.
+
+\begin{example}
+Xét hai cách viết sau về cùng một ý tưởng.
+
+Cách viết A:
+\begin{quote}
+Mô hình dùng \emph{gating}, \emph{hybrid fuzzy representation}, \emph{calibration} và \emph{ablation study}-oriented design.
+\end{quote}
+
+Cách viết B:
+\begin{quote}
+Mô hình trộn đầu ra của nhánh mờ và nhánh thời gian bằng một lớp học được. Muốn biết nhánh nào thật sự có ích, ta phải làm nghiên cứu triệt giảm thành phần: bỏ từng nhánh rồi đo lại trên cùng giao thức.
+\end{quote}
+
+Cách A nghe ``chuyên môn'' hơn, nhưng Cách B mới giải thích cơ chế. Nếu người học thấy Cách A sâu hơn chỉ vì có nhiều tiếng Anh hơn, thì đó là một ngộ nhận về phong cách học thuật.
+\end{example}
+
+Trích dẫn tài liệu cũng bị ngộ nhận theo cách tương tự.
+
+\begin{example}
+Giả sử một bài báo năm 2010 dùng ANFIS cho dữ liệu tháng của chỉ số vĩ mô và báo \(R^2\) rất cao. Nếu một script hiện tại dùng dữ liệu ngày, dùng OHLC, thêm BiLSTM, thêm cách tạo đặc trưng mới, rồi gợi ý rằng kết quả của bài báo kia là hậu thuẫn trực tiếp cho mô hình mới, thì lập luận đã nhảy quá xa.
+
+Điều trung thực hơn phải là: bài báo cũ cho một nguồn cảm hứng về việc dùng hai Gaussian membership functions hoặc về tinh thần ANFIS. Nó không thể được dùng như bằng chứng thực nghiệm trực tiếp cho một bối cảnh dữ liệu và giao thức đã thay đổi mạnh.
+\end{example}
+
+Một ngộ nhận nữa là coi \emph{tái lập} như đồng nghĩa với ``chạy được một lần và lưu được file trọng số''.
+
+\begin{example}
+Giả sử một dự án có các yếu tố sau:
+\begin{enumerate}
+\item đường dẫn dữ liệu được mã hóa cứng theo máy tác giả;
+\item mô hình có lớp tùy biến nhưng không đăng ký để tải lại thuận tiện;
+\item không ghi rõ seed hay phiên bản thư viện;
+\item kết quả được báo sau khi đã chọn run đẹp nhất.
+\end{enumerate}
+Một dự án như vậy có thể vẫn chạy được trên máy tác giả và vẫn lưu được file \texttt{.keras}, nhưng rất khó gọi là tái lập tốt theo nghĩa nghiên cứu. Người khác chưa chắc dựng lại được cùng pipeline, cùng quyết định chọn mô hình, hay cùng kết quả cuối.
+\end{example}
+
+Điểm cốt lõi ở đây là: dáng vẻ học thuật không thể thay cho cơ chế học thuật. Một tài liệu thật sự sâu phải làm rõ giả thiết, mô hình, dữ liệu, giao thức và phạm vi phát biểu. Nếu chỉ có nhãn dán đẹp, thì cảm giác sâu rất có thể chỉ là cảm giác.
+
+\section{Một quy trình tự kiểm để chống ngộ nhận khi đọc mô hình}
+
+Ngộ nhận không biến mất chỉ bằng cách đọc xong một chương. Nó chỉ giảm khi người học tạo được một quy trình tự kiểm đủ cụ thể để dùng lặp đi lặp lại. Một quy trình tối thiểu có thể gồm năm bước sau.
+
+\begin{enumerate}
+\item Viết lại bài toán bằng công thức: đầu vào là gì, mục tiêu là gì, mốc thời gian của thông tin là gì.
+\item Tách riêng ba lớp câu hỏi: biểu diễn, giao thức đánh giá, và khả năng diễn giải.
+\item Kiểm tra từng phép tiền xử lý xem nó được fit trên tập nào.
+\item Với các phát biểu mạnh như ``explainable'', ``state-of-the-art'', ``better'', luôn hỏi: tốt hơn ở chỉ số nào, trên giao thức nào, và so với đường cơ sở nào.
+\item Cố ý tạo một phản ví dụ nhỏ: một chuỗi toy, một bộ OHLC vô lý, hoặc một luật thiếu hệ quả, để xem mệnh đề của mình có còn đứng được không.
+\end{enumerate}
+
+\begin{remark}
+Nếu một nhận định không sống sót qua một phản ví dụ toy rất nhỏ, thì nhận định đó thường đang quá mạnh so với chứng cứ. Đây là một nguyên tắc kiểm tra cực kỳ hữu ích khi đọc cả bài báo lẫn mã nguồn.
+\end{remark}
+
+\section{Kết luận chương}
+
+Các ngộ nhận trong chương này không phải những ``lỗi của người mới'' theo nghĩa tầm thường. Chúng là các lối tắt nhận thức rất hấp dẫn, đến mức ngay cả người đã học khá lâu vẫn có thể mắc nếu không tự kiểm thường xuyên. Vì vậy, mục tiêu cuối cùng không phải là học thuộc một danh sách cấm, mà là tạo ra một thói quen trí tuệ: khi đứng trước một mô hình, phải luôn có đủ bình tĩnh để hỏi xem cái gì là biểu diễn, cái gì là giao thức, cái gì là diễn giải, và cái gì mới chỉ là vẻ ngoài.
+
+Nếu giữ được thói quen đó, người học sẽ không chỉ tránh được vài ngộ nhận về ML, DL hay logic mờ. Họ sẽ có một cách đọc mô hình trưởng thành hơn: ít bị choáng bởi sự hào nhoáng, ít kết luận oan, và khó tự đánh lừa mình hơn khi đi từ lý thuyết sang code thật.

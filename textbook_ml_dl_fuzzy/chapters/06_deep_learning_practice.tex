@@ -1,0 +1,298 @@
+\chapter{Học sâu trong thực hành: tối ưu, điều chuẩn và động học học}
+
+\section{Từ công thức mạng nơ-ron đến một hệ thống học hoàn chỉnh}
+
+Khi mới học về mạng nơ-ron, người ta thường có cảm giác rằng cốt lõi của học sâu đã nằm trọn trong hai thứ: công thức lan truyền tiến và công thức lan truyền ngược. Cảm giác ấy đúng một phần, nhưng nếu dừng lại ở đó thì ta chưa hiểu vì sao học sâu lại thành công trong thực hành. Một mạng nơ-ron chỉ thực sự trở thành một hệ thống học khi ít nhất sáu lớp quyết định cùng vận hành:
+
+\begin{enumerate}
+\item cách tham số được khởi tạo;
+\item cách gradient được ước lượng;
+\item cách tốc độ học được điều khiển;
+\item cách kiến trúc tạo ra thiên kiến quy nạp;
+\item cách điều chuẩn được áp đặt;
+\item cách giao thức đánh giá được thiết kế.
+\end{enumerate}
+
+Nếu một trong sáu lớp quyết định này bị làm cẩu thả, mô hình có thể vẫn ``chạy'', thậm chí còn cho kết quả đẹp trên một tập dữ liệu cụ thể, nhưng ta sẽ không còn hiểu rõ mình đang thấy điều gì. Đây là lý do học sâu, hơn nhiều lĩnh vực khác, đòi hỏi một tinh thần kỹ nghệ gắn liền với tinh thần toán học. Không đủ chỉ biết công thức; ta còn phải biết công thức ấy sống như thế nào trong một quy trình.
+
+\section{Hình học của khởi tạo: tại sao bước đầu tiên lại có sức chi phối lớn}
+
+Hãy xét một mạng nhiều lớp tuyến tính hóa cục bộ quanh điểm khởi tạo. Nếu trọng số được chọn quá nhỏ, tín hiệu đi qua mỗi lớp sẽ co lại; nếu trọng số quá lớn, tín hiệu sẽ bùng nổ. Điều này không chỉ xảy ra với giá trị kích hoạt, mà còn xảy ra với gradient khi lan truyền ngược. Nói cách khác, khởi tạo là cách ta chọn hệ tọa độ ban đầu cho bài toán tối ưu.
+
+Giả sử đầu vào đã được chuẩn hóa xấp xỉ có trung bình 0 và phương sai 1. Với một nơ-ron tuyến tính
+\[
+z=\sum_{j=1}^{n_{\mathrm{in}}} w_j x_j,
+\]
+nếu các \(x_j\) độc lập gần đúng và \(w_j\) độc lập có trung bình 0, thì
+\[
+\Var(z)\approx n_{\mathrm{in}} \Var(w_j)\Var(x_j).
+\]
+Muốn \(\Var(z)\) không tăng cũng không giảm quá mạnh qua lớp, ta phải chọn \(\Var(w_j)\) tỉ lệ nghịch với \(n_{\mathrm{in}}\). Từ trực giác này, các khởi tạo kiểu Xavier/Glorot và He ra đời.
+
+\subsection{Khởi tạo Xavier và He}
+
+Với các hàm kích hoạt gần đối xứng quanh 0 như \(\tanh\), \emph{Xavier initialization} chọn phương sai của trọng số xấp xỉ
+\[
+\Var(w_{ij})\approx \frac{2}{n_{\mathrm{in}}+n_{\mathrm{out}}}.
+\]
+Với ReLU, do một nửa tín hiệu thường bị chặn ở 0, \emph{He initialization} tăng phương sai lên:
+\[
+\Var(w_{ij})\approx \frac{2}{n_{\mathrm{in}}}.
+\]
+
+Những công thức này không phải chân lý tuyệt đối; chúng là kết quả của một phân tích gần đúng về lan truyền phương sai. Nhưng chính sự gần đúng ấy đã thay đổi thực hành học sâu. Nó chỉ ra rằng nhiều vấn đề tưởng như ``mô hình khó học'' thực ra chỉ là ``khởi tạo đặt hệ vào một chế độ tín hiệu không ổn''.
+
+\subsection{Khởi tạo và các hàm kích hoạt bão hòa}
+
+Với \emph{sigmoid} hay \(\tanh\), nếu \(z\) ban đầu đã rơi quá sâu vào miền bão hòa, đạo hàm gần 0 và gradient sớm suy yếu. Vì vậy, khởi tạo nhỏ quá mức chưa chắc tốt; khởi tạo phải đủ để tín hiệu vào vùng hoạt động, nhưng không quá lớn để mọi nơ-ron bão hòa ngay. Đây là một ví dụ điển hình cho thấy ``nhỏ'' và ``an toàn'' không phải lúc nào cũng đồng nghĩa.
+
+\section{Mini-batch: tại sao nhiễu lại giúp học}
+
+Nếu ta có toàn bộ dữ liệu \(\mathcal{D}\), gradient thật của hàm mất mát là
+\[
+\nabla L(\theta)=\frac{1}{n}\sum_{i=1}^n \nabla \ell_i(\theta).
+\]
+Trong thực hành, ta dùng một lô nhỏ \(B\subset\{1,\dots,n\}\) và thay bằng
+\[
+\nabla \widehat{L}_B(\theta)=\frac{1}{|B|}\sum_{i\in B}\nabla \ell_i(\theta).
+\]
+Ước lượng này không trùng gradient thật, nhưng thường là ước lượng không chệch. Điều đáng chú ý là nhiễu do việc lấy mẫu lô nhỏ không chỉ là một cái giá phải trả; nó còn là một nguồn lợi.
+
+\subsection{Nhiễu giúp thoát vùng bằng phẳng và hố nông}
+
+Trong một bề mặt mất mát phi lồi, rất nhiều điểm dừng không phải là cực tiểu sâu. Một gradient toàn bộ dữ liệu có thể đẩy quỹ đạo học vào những vùng phẳng rồi tiến rất chậm. Gradient nhiễu từ mini-batch, ngược lại, đôi khi khiến quỹ đạo học không bị kẹt quá lâu ở những hố nông hoặc những điểm yên ngựa. Cách hiểu này không nên bị tuyệt đối hóa, nhưng nó giúp ta nhận ra vì sao ``ước lượng gradient sai'' lại có thể dẫn đến lời giải tốt.
+
+\subsection{Kích thước lô là một siêu tham số thật sự}
+
+Lô quá nhỏ làm gradient quá nhiễu, thống kê không ổn, và hiệu quả phần cứng kém. Lô quá lớn làm động học tiến gần hạ dốc toàn phần, đôi khi giảm khả năng tổng quát hóa và làm yêu cầu về bộ nhớ tăng mạnh. Bởi vậy, kích thước lô không phải chỉ là tham số hệ thống; nó là một phần của động học học.
+
+\section{Động lượng, RMSProp và Adam dưới góc nhìn hình học}
+
+Nếu chỉ dùng hạ dốc theo gradient cơ bản
+\[
+\theta_{t+1}=\theta_t-\eta \nabla L(\theta_t),
+\]
+ta đang di chuyển theo một hệ tọa độ Euclid cố định với cùng độ lớn bước trên mọi hướng. Nhưng bề mặt mất mát trong học sâu rất \emph{dị hướng}: có hướng cong mạnh, có hướng phẳng, có hướng gradient đảo dấu liên tục. Đây là lý do các bộ tối ưu hiện đại tìm cách tái tham số hóa bài toán hoặc thêm quán tính.
+
+\subsection{Động lượng như trung bình động của hướng giảm}
+
+\emph{Momentum} dùng
+\[
+\bm{v}_{t+1}=\beta \bm{v}_t + (1-\beta)\nabla L(\theta_t),
+\qquad
+\theta_{t+1}=\theta_t-\eta \bm{v}_{t+1}.
+\]
+Nếu gradient thay đổi cùng chiều trong nhiều bước, động lượng tích lũy và tăng tốc. Nếu gradient dao động trái dấu mạnh theo một hướng, trung bình động sẽ làm suy giảm dao động đó. Hình ảnh vật lý gần đúng là một hạt chuyển động trên mặt năng lượng với quán tính.
+
+\subsection{RMSProp và ý tưởng co giãn theo tọa độ}
+
+Trong nhiều bài toán, một số tham số luôn có gradient lớn, một số khác luôn có gradient nhỏ. Dùng cùng một tốc độ học cho mọi chiều là kém hiệu quả. \emph{RMSProp} khắc phục bằng cách chia gradient cho căn bậc hai của trung bình động bình phương gradient. Trực giác là: hướng nào vốn đã có gradient lớn thì giảm bước lại; hướng nào gradient nhỏ thì cho đi xa hơn.
+
+\subsection{Adam như sự kết hợp giữa quán tính và co giãn}
+
+Adam kết hợp cả trung bình động bậc một và bậc hai:
+\[
+\bm{m}_{t+1}=\beta_1\bm{m}_t + (1-\beta_1)\bm{g}_t,
+\qquad
+\bm{v}_{t+1}=\beta_2\bm{v}_t + (1-\beta_2)\bm{g}_t^2,
+\]
+và cập nhật
+\[
+\theta_{t+1}
+=
+\theta_t-\eta \frac{\hat{\bm{m}}_{t+1}}{\sqrt{\hat{\bm{v}}_{t+1}}+\varepsilon}.
+\]
+Adam đặc biệt hữu ích khi gradient thưa, tỷ lệ gradient giữa các chiều rất chênh lệch, hoặc khi ta cần một bộ tối ưu ổn định để khởi động nhanh.
+
+\subsection{Một ngộ nhận phổ biến về Adam}
+
+Ngộ nhận hay gặp là: ``Adam luôn tốt hơn SGD.'' Điều này sai. Adam thường giúp tối ưu dễ hơn, nhưng lời giải mà nó tìm được không phải lúc nào cũng tổng quát hóa tốt hơn. Có những bài toán mà SGD với động lượng, dù chậm hơn, lại cho nghiệm ổn định hơn trên dữ liệu ngoài mẫu. Vì vậy, tối ưu nhanh và tổng quát hóa tốt là hai tiêu chuẩn có liên quan nhưng không đồng nhất.
+
+\section{Lịch trình tốc độ học: nghệ thuật điều khiển quy mô bước đi}
+
+Tốc độ học \(\eta\) thường là siêu tham số có ảnh hưởng lớn nhất. Điều này không khó hiểu: trong tối ưu phi lồi, ta không chỉ cần biết đi theo hướng nào, mà còn phải biết đi xa bao nhiêu. Chỉ thay đổi \(\eta\) đôi khi làm mô hình đi từ ``không học được gì'' sang ``học rất tốt''.
+
+\subsection{Vì sao cần giảm tốc độ học theo thời gian}
+
+Trong giai đoạn đầu, ta muốn đi nhanh để khám phá địa hình của hàm mất mát. Về sau, khi đã vào vùng nghiệm tốt, ta muốn đi chậm hơn để ổn định quanh nghiệm. Cách nghĩ này dẫn đến các lịch trình giảm \(\eta\) theo thời gian: giảm bậc thang, giảm theo hàm mũ, giảm theo cosine, \emph{warm restarts}, \emph{one-cycle}.
+
+\subsection{Warmup: tại sao có lúc phải tăng tốc độ học từ nhỏ lên lớn}
+
+Ở các mô hình rất sâu hoặc có chuẩn hóa phức tạp, dùng ngay một tốc độ học lớn có thể làm huấn luyện bất ổn ở vài epoch đầu. Khi đó người ta dùng \emph{warmup}: bắt đầu với tốc độ nhỏ rồi tăng dần đến giá trị đích. Điều này đặc biệt phổ biến ở các mô hình dựa trên \emph{transformer}, nhưng ý tưởng thì tổng quát hơn.
+
+\subsection{Hai triết lý điều chỉnh tốc độ học}
+
+Có hai triết lý hay gặp:
+
+\begin{enumerate}
+\item \textbf{điều chỉnh theo lịch có sẵn}: định nghĩa trước tốc độ học theo epoch;
+\item \textbf{điều chỉnh theo tín hiệu thẩm định}: ví dụ \texttt{ReduceLROnPlateau}.
+\end{enumerate}
+
+Mỗi cách có ưu điểm riêng. Cách thứ nhất rõ ràng, dễ lặp lại, ít phụ thuộc nhiễu của tập thẩm định. Cách thứ hai phản ứng với thực tế huấn luyện. Nhưng nếu tập thẩm định không được tách đúng nghĩa, cách thứ hai sẽ kéo theo toàn bộ sai lệch thống kê của quy trình.
+
+\section{Chuẩn hóa trong mạng: không chỉ để làm đẹp dữ liệu}
+
+Nhiều người mới hiểu chuẩn hóa như một bước xử lý dữ liệu đầu vào: trừ trung bình, chia độ lệch chuẩn. Trong học sâu, chuẩn hóa còn diễn ra bên trong mạng. Điều này làm thay đổi hoàn toàn cách ta nhìn các lớp trung gian.
+
+\subsection{Batch normalization}
+
+\emph{Batch normalization} chuẩn hóa activation theo từng lô:
+\[
+\hat{x}=\frac{x-\mu_B}{\sqrt{\sigma_B^2+\varepsilon}},
+\qquad
+y=\gamma \hat{x}+\beta.
+\]
+Hai tham số \(\gamma,\beta\) cho phép lớp học lại tỷ lệ và độ dời mong muốn. Bởi vậy, \emph{batch normalization} không làm mất sức biểu diễn của mạng; nó chỉ tái tham số hóa mạng về một hệ tọa độ thuận lợi hơn.
+
+\subsection{Tại sao chuẩn hóa giúp học}
+
+Chuẩn hóa giúp theo nhiều cơ chế cùng lúc:
+
+\begin{enumerate}
+\item kiểm soát quy mô của activation;
+\item làm bề mặt mất mát ít méo hơn;
+\item cho phép dùng tốc độ học lớn hơn;
+\item đóng vai trò điều chuẩn nhẹ do phụ thuộc vào thống kê của lô.
+\end{enumerate}
+
+Điều quan trọng là không nên biến những giải thích này thành thần thoại duy nhất. Không có một cơ chế đơn lẻ được mọi người đồng ý là ``toàn bộ lý do'' vì sao \emph{batch normalization} thành công.
+
+\subsection{Layer normalization và các biến thể}
+
+Trong mô hình hồi tiếp hoặc mô hình mà kích thước lô nhỏ, \emph{layer normalization} thường phù hợp hơn. Thay vì chuẩn hóa theo lô, ta chuẩn hóa theo chiều đặc trưng trong từng mẫu. Ý tưởng chung vẫn vậy: tái điều chỉnh hình học của tín hiệu bên trong mạng.
+
+\section{Điều chuẩn tường minh và điều chuẩn ngầm}
+
+Một tài liệu về học sâu sẽ thiếu sót nếu chỉ nói về điều chuẩn bằng vài từ khóa như \emph{dropout} hay \emph{weight decay}. Điều chuẩn trong học sâu có ít nhất hai lớp.
+
+\subsection{Điều chuẩn tường minh}
+
+Đây là những cơ chế được viết trực tiếp vào hàm mục tiêu hoặc quy trình học:
+
+\begin{enumerate}
+\item phạt chuẩn \(L^2\) lên trọng số;
+\item \emph{dropout};
+\item \emph{label smoothing};
+\item tăng cường dữ liệu;
+\item ràng buộc cấu trúc kiến trúc.
+\end{enumerate}
+
+\subsection{Điều chuẩn ngầm}
+
+Ngoài những cơ chế viết tường minh, rất nhiều yếu tố khác cũng điều chuẩn ngầm:
+
+\begin{enumerate}
+\item cách khởi tạo;
+\item kích thước lô;
+\item bộ tối ưu;
+\item dừng sớm;
+\item bản thân kiến trúc.
+\end{enumerate}
+
+Ví dụ, một mạng tích chập tự nhiên có thiên kiến quy nạp về tính cục bộ và tính tịnh tiến. Một mạng hồi tiếp có thiên kiến quy nạp về phụ thuộc tuần tự. Một ANFIS có thiên kiến quy nạp rằng quan hệ đầu vào--đầu ra có thể được phân mảnh thành những mô hình cục bộ gắn với các khái niệm mờ.
+
+\section{Dropout được hiểu đúng là gì}
+
+\emph{Dropout} thường được giới thiệu như ``ngẫu nhiên tắt một số nơ-ron để tránh quá khớp''. Mô tả đó không sai, nhưng quá sơ sài. Điều đáng quan tâm là: tại sao việc phá cấu trúc tạm thời này lại giúp tổng quát hóa?
+
+Một cách hiểu hữu ích là xem \emph{dropout} như việc huấn luyện một họ rất lớn các mạng con chia sẻ tham số. Ở mỗi bước, ta lấy một mạng con ngẫu nhiên. Khi suy diễn, ta xấp xỉ trung bình của họ mạng con ấy bằng một mạng đầy đủ đã được co giãn thích hợp.
+
+Nhưng ta cũng phải thấy mặt trái. Trong các chuỗi thời gian ngắn hoặc dữ liệu có cấu trúc mong manh, \emph{dropout} mạnh có thể làm vỡ tín hiệu tuần tự. Vì vậy, không nên áp dụng \emph{dropout} như một nghi thức vô điều kiện.
+
+\section{Dừng sớm: một điều chuẩn mạnh nhưng dễ bị lạm dụng}
+
+Hãy tưởng tượng đồ thị \emph{loss} trên tập huấn luyện luôn giảm, còn \emph{loss} trên tập thẩm định giảm rồi tăng. Điểm cực tiểu của đường thẩm định đánh dấu thời điểm mà mô hình vừa đủ học được quy luật hữu ích nhưng chưa học quá nhiều nhiễu của tập huấn luyện. Dừng tại đây là hợp lý.
+
+Điều cốt lõi là: tập dùng để quyết định dừng phải là tập thẩm định thật sự. Nếu dùng tập kiểm tra, ta đã biến một công cụ điều chuẩn thành một nguồn rò rỉ thông tin. Đây không phải ngụy biện học thuật; nó trực tiếp làm méo ước lượng hiệu năng ngoài mẫu.
+
+\section{Tối ưu thành công không đồng nghĩa với mô hình đúng}
+
+Một sai lầm nhận thức phổ biến là: nếu hàm mất mát giảm tốt và các chỉ số trên tập kiểm tra cao, mô hình hẳn đã ``hiểu đúng'' bài toán. Câu suy luận này sai ở nhiều tầng.
+
+\subsection{Giảm loss chỉ nói về bài toán tối ưu đang được giải}
+
+Nếu biến mục tiêu được định nghĩa lệch, hoặc giao thức đánh giá sai, tối ưu vẫn có thể thành công trên một bài toán sai. Mô hình không phân biệt được nó đang bị giao một nhiệm vụ hợp lý hay không; nó chỉ biết tối ưu cái ta giao.
+
+\subsection{Hiệu năng cao có thể đến từ cấu trúc thống kê dễ dàng}
+
+Trong chuỗi giá, chỉ cần nắm được xu hướng mức giá chung cũng đã có thể cho \(R^2\) khá đẹp trên giá tuyệt đối. Điều đó không nhất thiết nghĩa là mô hình hiểu cấu trúc vi mô của chuyển động giá. Đây là một ví dụ cho thấy chỉ số đẹp có thể che giấu bản chất dự báo nghèo.
+
+\section{Độ sâu, chiều rộng và thiên kiến quy nạp}
+
+Vì sao một số quan hệ phù hợp với mạng sâu hơn mạng nông? Một phần câu trả lời nằm ở khả năng biểu diễn hiệu quả: có những hàm mà mạng nông vẫn biểu diễn được, nhưng cần số nơ-ron rất lớn; trong khi mạng sâu biểu diễn với tham số gọn hơn nhờ tái sử dụng các biểu diễn trung gian.
+
+Nhưng phần quan trọng hơn cho người thực hành là thiên kiến quy nạp. Độ sâu cho phép phân tầng khái niệm. Mạng tích chập phù hợp dữ liệu có tính cục bộ và tái lặp theo không gian. Mạng hồi tiếp phù hợp dữ liệu có ký ức theo thời gian. Hệ mờ phù hợp dữ liệu mà quan hệ đầu vào--đầu ra có thể được diễn giải bằng các chế độ cục bộ. Nếu chọn sai thiên kiến quy nạp, tăng thêm tham số thường chỉ làm mô hình dễ quá khớp hơn.
+
+\section{Khi nào một mô hình học sâu thất bại dù công thức đều đúng}
+
+Ta có thể liệt kê một số chế độ thất bại rất hay gặp:
+
+\begin{enumerate}
+\item đầu vào không được chuẩn hóa hợp lý;
+\item tốc độ học quá lớn hoặc quá nhỏ;
+\item mục tiêu học không khớp với mục tiêu đánh giá;
+\item tập thẩm định và tập kiểm tra bị dùng lẫn;
+\item mô hình quá mạnh so với quy mô dữ liệu;
+\item chỉ số đánh giá không phản ánh cấu trúc thật của bài toán;
+\item pipeline có rò rỉ thông tin;
+\item đầu ra không bị ép tuân theo các ràng buộc logic nội tại của miền ứng dụng.
+\end{enumerate}
+
+Điều đáng chú ý là phần lớn lỗi trên không nằm ở định lý backpropagation hay công thức của LSTM. Chúng nằm ở giao diện giữa toán học của mô hình và logic của thí nghiệm.
+
+\section{Mất mát, mục tiêu và bài toán ra quyết định}
+
+Không phải lúc nào tối thiểu hóa MSE cũng là điều ta thật sự cần. Nếu mục tiêu cuối là xếp hạng, phân loại xu hướng, hay điều khiển rủi ro, hàm mất mát nên phản ánh đúng cấu trúc quyết định.
+
+Ví dụ, trong dự báo tài chính, sai số 1 đơn vị ở một ngày bình thường và 1 đơn vị ở một ngày khủng hoảng có thể mang ý nghĩa quyết định rất khác nhau. Tối ưu hóa MSE thuần túy không biết điều đó. Nếu ta quan tâm tới đuôi phân phối, ta có thể phải dùng \emph{quantile loss}, \emph{expectile loss}, hoặc mô hình hóa toàn bộ phân phối có điều kiện.
+
+\subsection{Hiệu chỉnh theo miền ứng dụng}
+
+Nếu đầu ra là bộ OHLC, bản thân miền ứng dụng yêu cầu các quan hệ hình học như
+\[
+H\ge \max(O,C),\qquad L\le \min(O,C).
+\]
+Một hàm mất mát không ý thức được những ràng buộc này là một hàm mất mát chưa hoàn chỉnh cho bài toán. Nó có thể vẫn cho mô hình học được cái gì đó, nhưng không đảm bảo học đúng đối tượng cần dùng.
+
+\section{Diễn giải trong học sâu: điều gì làm được, điều gì không}
+
+Các công cụ giải thích như \emph{saliency map}, \emph{integrated gradients}, \emph{SHAP}, \emph{attention visualization} rất hữu ích, nhưng chúng không phải chiếc đũa thần biến một mạng sâu thành một hệ thống suy luận minh bạch như sách giáo khoa logic.
+
+Một cách phân biệt hữu ích là:
+
+\begin{enumerate}
+\item \textbf{giải thích cơ chế}: mô hình hoạt động bằng cấu trúc nào;
+\item \textbf{giải thích cục bộ}: vì sao mẫu này ra kết quả này;
+\item \textbf{giải thích thống kê}: đặc trưng nào thường có ảnh hưởng lớn;
+\item \textbf{giải thích khái niệm}: mô hình có gắn được các đại lượng nội bộ với khái niệm con người hiểu hay không.
+\end{enumerate}
+
+Hệ mờ và ANFIS mạnh nhất ở loại thứ tư, nhưng lại yếu dần khi bị bọc trong một khối mạng sâu phức tạp. Đây là một điểm sẽ trở nên rất quan trọng ở chương phân tích mô hình cụ thể.
+
+\section{Quy trình huấn luyện nghiêm túc cho người mới}
+
+Để tránh biến học sâu thành ``ma thuật phụ thuộc may mắn'', ta có thể giữ một checklist rất chặt:
+
+\begin{enumerate}
+\item xác định chính xác biến mục tiêu và chỉ số đánh giá;
+\item mô tả bằng lời cách mỗi đặc trưng được xây từ dữ liệu thô;
+\item tách train/validation/test trước mọi biến đổi học từ dữ liệu;
+\item fit bộ chuẩn hóa trên train;
+\item huấn luyện với logging đầy đủ của train và validation;
+\item chỉ dùng validation cho mọi quyết định chọn mô hình;
+\item giữ test cho báo cáo cuối;
+\item kiểm tra cả lỗi số học, lỗi logic, và lỗi diễn giải.
+\end{enumerate}
+
+Checklist này nghe có vẻ giản dị, nhưng những mô hình yếu nhất và mạnh nhất thường khác nhau chính ở chỗ ai giữ được kỷ luật này đến cùng.
+
+\section{Một nhận xét quan trọng cho người học ANFIS và học sâu cùng lúc}
+
+Khi người học chuyển từ hệ mờ sang học sâu, họ thường có hai phản ứng cực đoan. Một là xem học sâu như một hộp đen mạnh hơn nên không cần diễn giải. Hai là xem cứ gắn một lớp mờ vào đâu đó thì mô hình lập tức giải thích được. Cả hai đều sai.
+
+Điều đúng hơn là: học sâu cung cấp năng lực biểu diễn rất mạnh; hệ mờ cung cấp cấu trúc khái niệm; ANFIS cố gắng nối hai phía; nhưng khả năng diễn giải thật sự phụ thuộc vào việc luật mờ có còn chi phối đầu ra cuối hay không, và pipeline có đủ sạch để ta tin vào các kết luận hay không.
+
+\section{Kết luận chương}
+
+Học sâu trong thực hành là bài toán phối hợp nhiều lớp quyết định: khởi tạo, gradient nhiễu, bộ tối ưu, lịch trình tốc độ học, điều chuẩn, và giao thức đánh giá. Nếu chỉ học công thức lan truyền ngược mà bỏ qua các lớp quyết định này, ta mới học được phần cú pháp của mô hình, chưa học được ngữ nghĩa của quá trình huấn luyện. Đây là cây cầu cần thiết để bước sang chuỗi thời gian và ANFIS một cách trưởng thành hơn.

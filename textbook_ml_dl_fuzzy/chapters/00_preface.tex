@@ -1,0 +1,113 @@
+\chapter*{Lời nói đầu}
+\addcontentsline{toc}{chapter}{Lời nói đầu}
+
+Tài liệu này được viết cho một đối tượng hơi khó chiều: người mới bắt đầu học \emph{Machine Learning} (học máy), \emph{Deep Learning} (học sâu), và logic mờ, nhưng lại muốn một bài giảng không ``ru ngủ'' bằng các danh sách tổng hợp ngắn gọn. Nếu ta học quá nhanh, ta dễ rơi vào một ảo tưởng nguy hiểm: nhớ tên mô hình thì tưởng như đã hiểu mô hình. Trong thực tế, điều khó nhất không nằm ở chỗ nhớ được tên ``linear regression'' (hồi quy tuyến tính), ``transformer'' (kiến trúc biến đổi), hay ``ANFIS'', mà nằm ở chỗ nhìn thấy mỗi mô hình đang giải một bài toán gì, đang áp đặt giả thiết gì lên dữ liệu, và đang đánh đổi điều gì để lấy điều gì.
+
+Một bài giảng nghiêm túc về học máy nên bắt đầu từ câu hỏi rất cơ bản: khi ta nói một hệ thống ``học'', ta thực sự đang nói đến điều gì? Có một tập dữ liệu đầu vào, có một không gian giả thuyết, có một hàm mất mát, có một cơ chế tối ưu, và có nhiều nguồn bất định. Ở mức trừu tượng cao, rất nhiều mô hình khác nhau chỉ là những cách khác nhau để xây dựng và điều chỉnh một ánh xạ
+\[
+f_\theta : \mathcal{X} \to \mathcal{Y}.
+\]
+Sự khác nhau giữa hồi quy tuyến tính, cây quyết định, mạng nơ-ron sâu, hay hệ suy diễn mờ Takagi--Sugeno không nằm ở việc chúng đều ``đoán'' giá trị đầu ra, mà nằm ở ngôn ngữ biểu diễn, hình học của tham số, cách \emph{regularize} (điều chuẩn), và cách con người đọc hiểu cấu trúc bên trong.
+
+Có ba tuyến tư duy sẽ chạy song song xuyên suốt tài liệu này.
+
+Tuyến thứ nhất là tư duy thống kê. Dữ liệu không bao giờ tự nhiên đến trong tinh khiết. Nó được tạo ra bởi một quá trình sinh dữ liệu nào đó, và ta chỉ quan sát được một mẫu hữu hạn. Từ đây xuất hiện rủi ro tổng quát hóa, phương sai của ước lượng, sai lệch chọn mô hình, và những ảo tưởng hiệu năng do \emph{leakage} (rò rỉ thông tin) gây ra. Nếu không nắm vững tư duy thống kê, ta rất dễ bị mê hoặc bởi một giá trị $R^2$ đẹp, một \emph{loss} (hàm mất mát) giảm đều, hay một biểu đồ dự báo ``có vẻ đúng''.
+
+Tuyến thứ hai là tư duy tối ưu và biểu diễn. Mỗi mô hình học được đều cần một cơ chế cập nhật tham số. Với hồi quy \emph{ridge} (hồi quy có phạt chuẩn $L^2$), cập nhật có thể có dạng đóng. Với \emph{logistic regression} (hồi quy logistic), cập nhật dựa trên \emph{gradient} (đạo hàm theo hướng tăng nhanh nhất). Với học sâu, \emph{chain rule} (quy tắc dây chuyền) trở thành xương sống của \emph{backpropagation} (lan truyền ngược). Với ANFIS, ta vừa có phần \emph{premise} (tiền đề) mang tính mờ, vừa có phần \emph{consequent} (hệ quả) mang tính tuyến tính, nên cấu trúc học có thể pha trộn giữa \emph{least squares} (bình phương tối thiểu) và \emph{gradient descent} (hạ dốc theo gradient) \citep{jang1993anfis}. Hiểu biểu diễn mà không hiểu tối ưu là thiếu một nửa; hiểu tối ưu mà không hiểu biểu diễn cũng vẫn thiếu nửa còn lại.
+
+Tuyến thứ ba là tư duy diễn giải. Trong các hệ thống sử dụng cho tài chính, y tế, điều khiển công nghiệp, câu hỏi ``vì sao mô hình ra kết quả này?'' không phải là một câu hỏi phụ. \emph{Fuzzy logic} (logic mờ) ra đời một phần vì nhu cầu giữ lại ngôn ngữ khái niệm của con người: thấp, cao, tăng mạnh, giảm nhẹ, xu hướng bất ổn. Học sâu, ngược lại, cực mạnh về biểu diễn và xấp xỉ phi tuyến, nhưng thường khó đọc. ANFIS là một nỗ lực nối hai truyền thống ấy: giữ cấu trúc suy diễn mờ, nhưng học tham số bằng phương pháp thích nghi \citep{zadeh1965fuzzy,ross2010fuzzy,jang1993anfis}.
+
+Tài liệu này không có ý định thay thế các giáo trình kinh điển như \citet{bishop2006prml}, \citet{hastie2009esl}, \citet{goodfellow2016dl}, \citet{murphy2022pml}, \citet{klir1995fuzzy}, hay \citet{ross2010fuzzy}. Trái lại, nó được viết như một cây cầu nối. Nếu bạn chưa học qua những sách đó, tài liệu này cho bạn một bản đồ để đọc và tiêu hóa chúng. Nếu bạn đã học qua, nó giúp liên kết những miền kiến thức vốn thường bị dạy tách rời: thống kê học máy, học sâu, logic mờ, và \emph{forecasting} (dự báo) cho dữ liệu chuỗi thời gian.
+
+\section*{Bảng chú giải thuật ngữ cốt lõi}
+\addcontentsline{toc}{section}{Bảng chú giải thuật ngữ cốt lõi}
+
+Để người đọc mới không bị đẩy vào tình trạng ``thấy từ tiếng Anh thì mặc nhiên phải hiểu'', tài liệu này dùng nguyên tắc sau: thuật ngữ chuyên môn sẽ được ưu tiên viết bằng tiếng Việt, đồng thời kèm thuật ngữ tiếng Anh ở lần xuất hiện đầu tiên hoặc tại những điểm cần so đối chiếu với tài liệu gốc. Dưới đây là một số thuật ngữ sẽ xuất hiện xuyên suốt:
+
+\begin{longtable}{p{0.28\textwidth}p{0.64\textwidth}}
+\textbf{Machine Learning} & Học máy: ngành nghiên cứu các mô hình học quy luật từ dữ liệu để dự đoán, phân loại, hoặc ra quyết định.\\
+\textbf{Deep Learning} & Học sâu: nhánh của học máy dùng mạng nơ-ron nhiều lớp để học biểu diễn phức tạp.\\
+\textbf{Feature} & Đặc trưng: biến đầu vào dùng để mô tả đối tượng hay trạng thái của hệ thống.\\
+\textbf{Label / Target} & Nhãn / biến mục tiêu: đại lượng mà mô hình cần dự đoán.\\
+\textbf{Loss} & Hàm mất mát: đại lượng đo mức sai giữa dự đoán và giá trị thật.\\
+\textbf{Optimizer} & Bộ tối ưu: thuật toán dùng để cập nhật tham số nhằm giảm hàm mất mát.\\
+\textbf{Gradient} & Vector đạo hàm biểu thị hướng tăng nhanh nhất của hàm số.\\
+\textbf{Backpropagation} & Lan truyền ngược: kỹ thuật tính gradient hiệu quả trong mạng nơ-ron.\\
+\textbf{Overfitting} & Quá khớp: mô hình học quá sát dữ liệu huấn luyện nên tổng quát hóa kém.\\
+\textbf{Regularization} & Điều chuẩn: cách ép mô hình bớt phức tạp hoặc bớt nhạy để giảm quá khớp.\\
+\textbf{Validation set} & Tập thẩm định: dữ liệu dùng để chọn siêu tham số hoặc dừng sớm.\\
+\textbf{Test set} & Tập kiểm tra: dữ liệu chỉ dùng để đánh giá cuối cùng.\\
+\textbf{Leakage} & Rò rỉ thông tin: tình huống thông tin từ tương lai hoặc từ tập kiểm tra rò vào quá trình học.\\
+\textbf{Membership function} & Hàm thuộc: hàm cho biết một giá trị thuộc vào một khái niệm mờ ở mức độ nào.\\
+\textbf{Fuzzy rule} & Luật mờ: quy tắc dạng ``nếu -- thì'' có dùng các khái niệm mờ.\\
+\textbf{Consequent} & Phần hệ quả của luật mờ, tức vế ``thì''.\\
+\textbf{Premise} & Phần tiền đề của luật mờ, tức vế ``nếu''.\\
+\textbf{Time series} & Chuỗi thời gian: dãy quan sát có thứ tự theo thời gian.\\
+\textbf{Forecasting} & Dự báo: dự đoán giá trị tương lai từ dữ liệu quá khứ và hiện tại.\\
+\end{longtable}
+
+\section*{Cách đọc tài liệu}
+\addcontentsline{toc}{section}{Cách đọc tài liệu}
+
+Bạn có thể đọc từ đầu đến cuối, và đó là cách tôi khuyến khích. Tuy nhiên, nếu bạn có một mục tiêu rất cụ thể, vẫn có thể dùng tài liệu như một sổ tay có hệ thống.
+
+Nếu bạn gặp khó ở phần toán, hãy đọc Chương~2 thật chậm. Trong rất nhiều trường hợp, cái cần không phải là ``toán cao cấp'' mà là sự rõ ràng trong định nghĩa. Thừa số này là \emph{scalar} (đại lượng vô hướng) hay \emph{vector}? Đạo hàm này theo biến nào? Xác suất này có điều kiện trên biến gì? Chỉ cần mù mờ ở những điểm đó, một chuỗi lập luận rất dễ sập.
+
+Nếu bạn muốn hiểu học máy cổ điển trước khi vào học sâu, hãy đọc liền Chương~3 và Chương~4. Ở đó, ta thấy ý tưởng \emph{empirical risk minimization} (tối thiểu hóa rủi ro thực nghiệm), điều chuẩn, \emph{kernel} (hàm hạt nhân), cây quyết định, \emph{ensemble} (mô hình tổ hợp), và \emph{clustering} (phân cụm). Những mô hình ấy không ``cũ'' theo nghĩa lạc hậu. Ngược lại, chúng đặt ra những vấn đề cốt lõi mà mô hình hiện đại vẫn phải đối mặt.
+
+Nếu bạn muốn hiểu tại sao học sâu học được những biểu diễn phức tạp, Chương~5 và Chương~6 sẽ là trọng tâm. Ở đó, ta phân tích \emph{perceptron}, \emph{MLP} (mạng nơ-ron nhiều lớp), lan truyền ngược, điều chuẩn, hiện tượng nổ gradient, triệt tiêu gradient, huấn luyện theo lô, và các quy tắc đánh giá.
+
+Nếu bạn muốn tập trung vào logic mờ và ANFIS, hãy đọc Chương~8, Chương~9, Chương~10. Những chương này không chỉ giới thiệu ``hàm thuộc là gì'', mà còn đặt câu hỏi: vì sao toán tử hợp trên tập mờ không thể chọn tùy ý, vì sao \emph{T-norm} (chuẩn tam giác cho phép diễn giải phép ``và'' mờ) quan trọng, vì sao hệ Takagi--Sugeno phù hợp với học tham số, và vì sao khả năng diễn giải có thể suy giảm khi ta chèn thêm các khối học sâu vào sau lớp mờ.
+
+Cuối cùng, Chương~11 sẽ trở lại với một file mã nguồn thật trong repo: \texttt{run\_feature\_group\_anfis.py}. Mục tiêu của chương này là cho thấy một kỹ năng cực quan trọng của người học máy: đọc mô hình trong code, không chỉ trong bài báo. Mô hình trong code không phải lúc nào cũng giống mô hình trong mô tả. Đôi khi ý tưởng đúng nhưng triển khai sai. Đôi khi triển khai có vẻ chạy được nhưng giao thức đánh giá làm hỏng kết quả. Đôi khi ``giải thích được'' chỉ là một khẩu hiệu. Chương cuối sẽ chỉ rõ từng điểm như vậy.
+
+\section*{Quy ước ký hiệu}
+\addcontentsline{toc}{section}{Quy ước ký hiệu}
+
+Ta dùng chữ cái thường in đậm $\bm{x}$ cho vector đầu vào, $y$ cho biến đích, $\theta$ cho tập tham số, và $f_\theta$ cho mô hình. Ký hiệu $\mathcal{D} = \{(\bm{x}_i,y_i)\}_{i=1}^n$ chỉ tập dữ liệu huấn luyện hữu hạn. Ký hiệu
+\[
+R(\theta) = \E_{(\bm{x},y)\sim P}\big[\ell(f_\theta(\bm{x}),y)\big]
+\]
+chỉ rủi ro kỳ vọng, còn
+\[
+\widehat{R}_n(\theta) = \frac{1}{n}\sum_{i=1}^n \ell(f_\theta(\bm{x}_i), y_i)
+\]
+chỉ rủi ro thực nghiệm. Khi ta nói ``học'', ta thường đang tìm một nghiệm gần đúng của bài toán
+\[
+\theta^\star \in \argmin_\theta \widehat{R}_n(\theta) + \lambda \Omega(\theta),
+\]
+trong đó $\Omega$ là số hạng điều chuẩn.
+
+Với dữ liệu chuỗi thời gian, ta sẽ dùng chỉ số thời điểm $t$. Biến $x_t$ là quan sát ở thời điểm $t$, còn dự báo một bước trước là \(
+\hat{y}_{t+1|t}
+\), nghĩa là dự báo cho thời điểm $t+1$ dựa trên thông tin có sẵn đến hết thời điểm $t$.
+
+Trong logic mờ, tập mờ $A$ trên miền $X$ được mô tả bởi hàm thuộc
+\[
+\mu_A : X \to [0,1].
+\]
+Giá trị $\mu_A(x)$ không phải xác suất ``$x$ thuộc $A$'' mà là mức độ mà $x$ thỏa khái niệm $A$. Đây là phân biệt rất quan trọng và thường bị bỏ qua.
+
+\section*{Triết lý sử dụng toán học}
+\addcontentsline{toc}{section}{Triết lý sử dụng toán học}
+
+Tài liệu này không có chủ đích giảm nhẹ toán học chỉ để ``dễ đọc''. Các chứng minh và lập luận sẽ được viết chặt chẽ trong phạm vi cần thiết. Tuy nhiên, chặt chẽ không có nghĩa là lan man kỹ thuật. Chứng minh được đưa vào khi nó giúp ta hiểu lý do mô hình hoạt động, nhận ra điều kiện để kết luận đúng, hoặc thấy điểm mỏng để mô hình thất bại. Chứng minh không được đưa vào chỉ để trang trí.
+
+Ví dụ, ta sẽ không chỉ viết công thức \emph{normal equation} (phương trình chuẩn) cho hồi quy tuyến tính, mà sẽ chỉ ra nó đến từ điều kiện gradient bằng không, và vì sao tính xác định dương của ma trận $X^\top X$ lại quan trọng. Ta sẽ không chỉ viết công thức cập nhật LSTM, mà sẽ phân tích vai trò của cổng nhớ và tương tác của nó với hiện tượng triệt tiêu gradient \citep{hochreiter1997lstm}. Ta sẽ không chỉ viết ANFIS có năm lớp, mà sẽ chỉ rõ từng lớp đang tính toán đại lượng nào, nơi nào có thể học bằng bình phương tối thiểu, nơi nào phải dùng hạ dốc theo gradient \citep{jang1993anfis}.
+
+\section*{Điểm kết nối cuối cùng}
+\addcontentsline{toc}{section}{Điểm kết nối cuối cùng}
+
+Nếu bạn học đến hết tài liệu này, điều quan trọng nhất không phải là thuộc lòng thêm nhiều công thức, mà là hình thành một thói quen trí tuệ: mỗi khi gặp một mô hình mới, hãy hỏi liên tiếp năm câu hỏi.
+
+Tham số của nó biểu diễn điều gì?
+
+Hàm mất mát có phù hợp với bài toán không?
+
+Dữ liệu đã được tách \emph{train/validation/test} (huấn luyện/thẩm định/kiểm tra) đúng cách chưa?
+
+Chỉ số đánh giá có thực sự đo đúng thứ cần đo không?
+
+Và cuối cùng, điều gì trong mô hình là giải thích được, điều gì chỉ là ảo giác diễn giải?
+
+Nếu năm câu hỏi này trở thành phản xạ, bạn đã đi được rất xa trên con đường học máy.

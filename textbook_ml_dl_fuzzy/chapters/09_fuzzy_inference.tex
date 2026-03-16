@@ -1,0 +1,254 @@
+\chapter{Hệ suy diễn mờ: từ Mamdani đến Takagi--Sugeno}
+
+\section{Luật nếu--thì là cách biến trực giác thành cấu trúc toán học}
+
+Khi con người mô tả một hiện tượng phức tạp, họ thường không bắt đầu bằng hệ phương trình. Họ bắt đầu bằng những câu kiểu:
+
+\begin{quote}
+Nếu biên độ biến động cao và khoảng nhảy mở cửa lớn, thì thị trường ở trạng thái bất ổn.
+\end{quote}
+
+Những câu như vậy có giá trị vì chúng gắn mô hình với ngôn ngữ chuyên gia. Nhưng để dùng trong tính toán, ta cần biến chúng thành một cơ chế hình thức. Hệ suy diễn mờ làm đúng việc đó: biến các luật nếu--thì có chứa khái niệm mềm thành một bản đồ toán học từ đầu vào sang đầu ra.
+
+Một luật mờ tổng quát có dạng
+\[
+R_r:\quad
+\text{Nếu } x_1 \text{ là } A_1^r,\dots,x_d \text{ là } A_d^r
+\text{ thì } y \text{ là } B^r.
+\]
+Ở đây:
+
+\begin{enumerate}
+\item \(A_j^r\) là các tập mờ ở phần tiền đề;
+\item \(B^r\) là đối tượng ở phần hệ quả;
+\item chỉ số \(r\) đánh số luật.
+\end{enumerate}
+
+Toàn bộ hệ suy diễn mờ phải trả lời bốn câu hỏi:
+
+\begin{enumerate}
+\item làm mờ hóa đầu vào thế nào;
+\item kết hợp mức độ đúng của các tiền đề ra sao;
+\item ánh xạ từ tiền đề sang hệ quả bằng phép suy diễn nào;
+\item giải mờ thế nào để ra đầu ra sắc nét.
+\end{enumerate}
+
+\section{Làm mờ hóa như một phép trích xuất đặc trưng}
+
+Giả sử đầu vào là \(\bm{x}=(x_1,\dots,x_d)\). Với mỗi biến \(x_j\), ta gán một họ nhãn ngôn ngữ như \(\{\text{LOW}, \text{MEDIUM}, \text{HIGH}\}\), và mỗi nhãn tương ứng với một hàm thuộc:
+\[
+\mu_{A_{j1}}(x_j),\ \mu_{A_{j2}}(x_j),\ \dots.
+\]
+Về mặt tính toán, đây là một phép biến đổi phi tuyến từng tọa độ. Về mặt ngữ nghĩa, đây là phép trả lời câu hỏi: ``giá trị quan sát hiện tại thuộc vào khái niệm này ở mức độ nào?''
+
+Đây là điểm rất đáng lưu ý: phần làm mờ hóa của hệ mờ có thể được xem như một tầng biểu diễn. Nó không khác hoàn toàn tư duy của học sâu; chỉ khác ở chỗ biểu diễn được buộc phải đi qua những khái niệm ngôn ngữ mà con người đặt tên.
+
+\section{Độ kích hoạt của luật và ý nghĩa của phép ``và''}
+
+Khi một luật có nhiều điều kiện tiền đề, ta phải quyết định cách kết hợp chúng. Nếu luật nói
+\[
+\text{Nếu } x_1 \text{ là } A_1 \text{ và } x_2 \text{ là } A_2,
+\]
+thì từ hai mức độ thuộc \(\mu_{A_1}(x_1)\) và \(\mu_{A_2}(x_2)\), ta cần tạo một độ kích hoạt duy nhất \(w\).
+
+\subsection{Hai lựa chọn kinh điển}
+
+Hai cách phổ biến nhất là:
+\[
+w=\min\big(\mu_{A_1}(x_1),\mu_{A_2}(x_2)\big),
+\]
+hoặc
+\[
+w=\mu_{A_1}(x_1)\mu_{A_2}(x_2).
+\]
+
+Phép \(\min\) diễn tả trực giác ``mắt xích yếu nhất quyết định độ đúng của mệnh đề hợp''. Phép tích diễn tả trực giác ``mỗi điều kiện đều làm co mức độ kích hoạt theo kiểu nhân''. Trong ANFIS, phép tích đặc biệt hấp dẫn vì nó trơn, khả vi, và phù hợp với huấn luyện bằng gradient.
+
+\subsection{Một ví dụ so sánh}
+
+Giả sử
+\[
+\mu_{A_1}(x_1)=0.8,\qquad \mu_{A_2}(x_2)=0.6.
+\]
+Nếu dùng \(\min\), ta được \(w=0.6\). Nếu dùng tích, ta được \(w=0.48\). Phép tích trừng phạt mạnh hơn việc nhiều điều kiện chỉ ở mức trung bình. Điều này cho thấy lựa chọn T-norm không phải một tiểu tiết kỹ thuật; nó thay đổi tính khí của cả hệ suy diễn.
+
+\section{Phép kéo theo mờ và vai trò của nó trong suy diễn}
+
+Trong logic kinh điển, mệnh đề ``nếu \(P\) thì \(Q\)'' có thể được biểu diễn qua bảng chân trị. Trong logic mờ, câu chuyện phức tạp hơn. Ta cần một \emph{fuzzy implication} (phép kéo theo mờ) để kết nối mức độ đúng của tiền đề với mức độ đúng của hệ quả.
+
+Có nhiều họ phép kéo theo mờ đã được đề xuất. Tuy nhiên, trong các hệ suy diễn ứng dụng, người ta thường không triển khai ở mức trừu tượng của logic kéo theo, mà đi trực tiếp vào cơ chế tính toán của Mamdani hoặc Takagi--Sugeno. Dù vậy, việc biết rằng đằng sau hệ suy diễn có một lớp logic như vậy giúp ta tránh nhầm tưởng rằng mọi cách ``gắn hệ quả'' đều là như nhau.
+
+\section{Hệ Mamdani: khi vế hệ quả vẫn là ngôn ngữ}
+
+Trong hệ Mamdani, mỗi luật có dạng
+\[
+\text{Nếu } x_1 \text{ là } A_1^r,\dots,x_d \text{ là } A_d^r
+\text{ thì } y \text{ là } B^r,
+\]
+trong đó \(B^r\) là một tập mờ trên miền đầu ra.
+
+\subsection{Ba bước của Mamdani}
+
+Sau khi tính độ kích hoạt \(w_r\), hệ Mamdani thường thực hiện:
+
+\begin{enumerate}
+\item \textbf{kéo theo cục bộ}: cắt hoặc co giãn tập mờ hệ quả \(B^r\) theo \(w_r\);
+\item \textbf{tổng hợp toàn cục}: hợp tất cả các hệ quả đã được kích hoạt;
+\item \textbf{giải mờ}: chuyển tập mờ đầu ra thành một số sắc nét.
+\end{enumerate}
+
+Nếu dùng phép cắt kiểu Mamdani, ta có
+\[
+\mu_{B_r'}(y)=\min(w_r,\mu_{B^r}(y)).
+\]
+Sau đó, nếu dùng hợp kiểu cực đại,
+\[
+\mu_{B}(y)=\max_r \mu_{B_r'}(y).
+\]
+Cuối cùng, một cách giải mờ kinh điển là trọng tâm:
+\[
+y^\star=\frac{\int y\,\mu_B(y)\,dy}{\int \mu_B(y)\,dy}.
+\]
+
+\subsection{Vì sao Mamdani hấp dẫn}
+
+Điểm mạnh lớn nhất của Mamdani là tính ngôn ngữ. Cả đầu vào lẫn đầu ra đều có thể được diễn tả bằng nhãn mờ. Với các bài toán điều khiển hoặc chuyên gia, điều này giúp hệ thống rất gần với cách con người mô tả tri thức.
+
+\subsection{Giới hạn của Mamdani}
+
+Chính sự giàu ngôn ngữ ấy làm cho Mamdani kém thuận lợi hơn trong học tham số. Đầu ra là một tập mờ, nên quá trình giải mờ và tối ưu hóa trở nên nặng hơn. Đây là lý do các hệ neuro-fuzzy học bằng dữ liệu thường ưu tiên Sugeno hơn Mamdani.
+
+\section{Hệ Takagi--Sugeno--Kang: khi hệ quả là mô hình cục bộ sắc nét}
+
+Trong hệ Takagi--Sugeno--Kang, một luật có dạng
+\[
+R_r:\quad
+\text{Nếu } x_1 \text{ là } A_1^r,\dots,x_d \text{ là } A_d^r
+\text{ thì } y_r = p_{r0}+\sum_{j=1}^d p_{rj}x_j.
+\]
+Hệ quả không còn là tập mờ trên miền đầu ra, mà là một hàm sắc nét của đầu vào. Điều này thay đổi bản chất của hệ suy diễn theo hướng cực kỳ quan trọng.
+
+\subsection{Đầu ra như tổ hợp của các mô hình cục bộ}
+
+Nếu \(w_r\) là độ kích hoạt của luật thứ \(r\), đầu ra cuối là
+\[
+y(\bm{x})
+=
+\frac{\sum_{r=1}^R w_r(\bm{x})\,y_r(\bm{x})}{\sum_{r=1}^R w_r(\bm{x})}.
+\]
+Đặt
+\[
+\bar{w}_r(\bm{x})=\frac{w_r(\bm{x})}{\sum_{s=1}^R w_s(\bm{x})},
+\]
+ta viết được
+\[
+y(\bm{x})=\sum_{r=1}^R \bar{w}_r(\bm{x})\,y_r(\bm{x}).
+\]
+Đây là một công thức rất sâu. Nó nói rằng hệ Sugeno là một tổ hợp có trọng số của nhiều mô hình cục bộ, trong đó trọng số phụ thuộc vào vị trí hiện tại của đầu vào trong không gian đặc trưng.
+
+\subsection{Hệ Sugeno như một phân hoạch đơn vị}
+
+Vì
+\[
+\sum_{r=1}^R \bar{w}_r(\bm{x})=1,\qquad \bar{w}_r(\bm{x})\ge 0,
+\]
+các \(\bar{w}_r\) tạo thành một \emph{partition of unity} (phân hoạch đơn vị) trên miền đầu vào. Điều này cho phép ta nhìn Sugeno như một cơ chế ghép mềm các mô hình cục bộ affine. Đây là cầu nối rất đẹp giữa logic mờ và mô hình hóa cục bộ trong giải tích số, tối ưu và điều khiển.
+
+\section{TSK bậc 0 và bậc 1: khác nhau không chỉ ở số tham số}
+
+Nếu hệ quả chỉ là hằng số
+\[
+y_r=c_r,
+\]
+ta có TSK bậc 0. Nếu hệ quả là affine,
+\[
+y_r=p_{r0}+\sum_j p_{rj}x_j,
+\]
+ta có TSK bậc 1.
+
+\subsection{TSK bậc 0}
+
+TSK bậc 0 gần với tinh thần của các luật mờ cổ điển hơn. Mỗi luật đóng góp một giá trị đại diện. Hệ này thường dễ diễn giải hơn, nhưng khả năng xấp xỉ có thể kém hơn khi quan hệ đầu vào--đầu ra biến đổi mượt trong từng vùng.
+
+\subsection{TSK bậc 1}
+
+TSK bậc 1 cho phép mỗi vùng mờ có một mô hình tuyến tính cục bộ riêng. Điều này làm hệ linh hoạt hơn rất nhiều. Chính vì vậy, ANFIS kinh điển của Jang \citep{jang1993anfis} sử dụng hệ Sugeno bậc 1.
+
+\section{Cơ sở luật được sinh ra như thế nào}
+
+Muốn xây một hệ suy diễn mờ, ta cần một cơ sở luật. Đây là điểm mà nhiều người mới thường lướt qua quá nhanh. Nhưng trong thực tế, cách sinh luật quyết định mạnh đến chất lượng và tính diễn giải của hệ.
+
+\subsection{Phân hoạch lưới toàn phần}
+
+Nếu mỗi đặc trưng có \(m\) nhãn mờ và có \(d\) đặc trưng, phân hoạch lưới sinh ra tối đa \(m^d\) luật. Cách này có một ưu điểm lớn: rõ ràng và có tính hệ thống. Tuy nhiên, nó bị bùng nổ số luật rất nhanh.
+
+Ví dụ, chỉ với \(d=6\) và \(m=2\), ta đã có
+\[
+2^6=64
+\]
+luật. Với \(m=3\), con số thành
+\[
+3^6=729.
+\]
+Đây là lý do không thể nói về hệ mờ mà không đồng thời nói về lời nguyền số chiều.
+
+\subsection{Sinh luật dựa trên phân cụm}
+
+Một cách khác là dùng cấu trúc dữ liệu để sinh luật. Ta phân cụm dữ liệu, rồi mỗi cụm tạo ra một luật hoặc một trung tâm của vùng mờ. Cách này giảm số luật và làm cơ sở luật bám dữ liệu hơn. Đổi lại, luật thu được có thể kém ``ngôn ngữ'' hơn, vì chúng không còn đến từ một lưới khái niệm đều đặn.
+
+\subsection{Luật do chuyên gia cung cấp}
+
+Trong các hệ thống điều khiển hoặc chuyên gia, luật có thể đến trực tiếp từ người thiết kế. Đây là lựa chọn có giá trị lớn về mặt diễn giải, nhưng chất lượng dự báo phụ thuộc mạnh vào chất lượng tri thức chuyên gia và mức độ bao phủ của bộ luật.
+
+\section{Sự đánh đổi giữa độ phủ và tính phân biệt}
+
+Một cơ sở luật tốt phải cùng lúc thỏa hai yêu cầu:
+
+\begin{enumerate}
+\item mọi quan sát hợp lệ đều được ít nhất một số luật phủ tới;
+\item các luật phải phân biệt đủ mạnh để không ai cũng kích hoạt giống nhau.
+\end{enumerate}
+
+Nếu các hàm thuộc quá rộng, mọi luật đều kích hoạt một ít, và hệ mất khả năng phân biệt. Nếu các hàm thuộc quá hẹp, nhiều quan sát rơi vào vùng độ kích hoạt rất nhỏ, làm hệ thiếu ổn định và khó học. Đây là một biểu hiện khác của bài toán thiên kiến quy nạp trong hệ mờ.
+
+\section{Hệ mờ như một mô hình chuyên gia cục bộ}
+
+Có một cách nhìn rất hữu ích về hệ Sugeno: đó là một mô hình \emph{mixture-of-experts} theo nghĩa mềm. Các luật đóng vai trò chuyên gia cục bộ; các hàm thuộc và độ kích hoạt đóng vai trò cơ chế cổng. Điều này cho phép ta nối tư duy fuzzy với nhiều ý tưởng hiện đại trong học máy.
+
+Nhưng ta cũng phải thấy điểm khác. Trong một \emph{mixture-of-experts} thông thường, cổng điều phối không nhất thiết phải mang nghĩa ngôn ngữ. Trong hệ mờ, điều phối được mong đợi là có ý nghĩa khái niệm như LOW, HIGH, MEDIUM. Chính kỳ vọng này làm cho bài toán diễn giải của hệ mờ vừa hấp dẫn vừa dễ bị tổn thương.
+
+\section{Tính nhận dạng và sự mong manh của nhãn ngôn ngữ}
+
+Một hệ mờ có thể có nhiều cấu hình tham số khác nhau tạo ra hành vi gần giống nhau. Hai hàm thuộc có thể đổi chỗ, độ rộng có thể nở ra để bù cho hệ số hệ quả, hoặc hai luật có thể gần như trùng lặp. Vì vậy, việc đọc nhãn LOW/HIGH từ một mô hình đã huấn luyện không tự động bảo đảm ta đang đọc đúng nghĩa khái niệm ban đầu.
+
+Đây là điểm cực kỳ quan trọng cho ANFIS. Nếu tâm của hàm LOW sau huấn luyện vượt qua tâm của hàm HIGH, thì việc vẫn gọi nó là LOW là một ngộ nhận. Nói cách khác, hệ mờ chỉ giữ được sức mạnh diễn giải nếu ta quản trị được tính nhận dạng của các hàm thuộc.
+
+\section{Diễn giải và cái giá của diễn giải}
+
+Người ta hay nói rằng hệ mờ ``dễ giải thích''. Câu này đúng, nhưng thiếu điều kiện đi kèm. Một hệ mờ chỉ thật sự dễ giải thích khi:
+
+\begin{enumerate}
+\item số luật đủ ít để con người có thể đọc;
+\item mỗi luật có tiền đề mang nghĩa ngôn ngữ ổn định;
+\item hệ quả của luật cũng có thể đọc và hiểu;
+\item đầu ra cuối không bị pha trộn quá mạnh bởi một cấu trúc bên ngoài hệ luật.
+\end{enumerate}
+
+Nếu chỉ thỏa điều kiện thứ nhất mà không thỏa các điều kiện còn lại, ta chỉ có một hệ trông giống dễ giải thích. Đây là khác biệt giữa \emph{appearance of interpretability} (bề ngoài của tính diễn giải) và \emph{substantive interpretability} (tính diễn giải có thực chất).
+
+\section{Lỗi mà các chỉ số đánh giá không nhìn thấy}
+
+Một hệ suy diễn mờ có thể đạt MSE thấp nhưng vẫn là một mô hình xấu theo nhiều nghĩa:
+
+\begin{enumerate}
+\item các luật không còn mang nghĩa ngôn ngữ;
+\item các vùng mờ chồng lấp vô tổ chức;
+\item đầu ra vi phạm các ràng buộc logic của bài toán;
+\item hệ chỉ học tốt trên một giao thức đánh giá có rò rỉ thông tin.
+\end{enumerate}
+
+Điều này dạy ta một nguyên lý lớn: chỉ số dự báo tốt là cần, nhưng không đủ để biện minh cho chất lượng của một hệ mờ.
+
+\section{Từ hệ suy diễn mờ đến ANFIS}
+
+Khi hệ Sugeno được viết dưới dạng công thức trơn, khả vi, và có hệ quả affine, ta có thể đưa nó vào một khung học tham số bằng dữ liệu. Chính tại điểm này, ANFIS xuất hiện như một cây cầu nối: giữ cấu trúc của hệ mờ, nhưng học tham số bằng các công cụ của tối ưu hiện đại. Chương tiếp theo sẽ phân tích kỹ cây cầu đó, cùng những gì nó giữ được và những gì nó có thể đánh mất.
