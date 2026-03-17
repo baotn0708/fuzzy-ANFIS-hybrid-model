@@ -1,0 +1,415 @@
+%Vẽ model trong model_2.py
+\documentclass[11pt,a4paper,landscape]{article}
+\usepackage[margin=1.2cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc,backgrounds,shapes.multipart}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+
+\definecolor{inputblue}{HTML}{DCEBFF}
+\definecolor{fuzzygreen}{HTML}{DDF5E3}
+\definecolor{seqorange}{HTML}{FDE7C8}
+\definecolor{mixpurple}{HTML}{E9DDF8}
+\definecolor{outred}{HTML}{FADBDD}
+\definecolor{notegray}{HTML}{F3F4F6}
+\definecolor{linegray}{HTML}{4B5563}
+\definecolor{titleblue}{HTML}{1F4E79}
+
+\tikzset{
+  >={Latex[length=3mm,width=2mm]},
+  line/.style={draw=linegray, -Latex, line width=0.9pt},
+  dashedline/.style={draw=linegray, -Latex, line width=0.8pt, dashed},
+  box/.style={
+    draw=linegray,
+    rounded corners=2mm,
+    align=center,
+    minimum height=11mm,
+    minimum width=28mm,
+    font=\small,
+    inner sep=4pt
+  },
+  smallbox/.style={
+    draw=linegray,
+    rounded corners=1.5mm,
+    align=center,
+    minimum height=9mm,
+    minimum width=24mm,
+    font=\footnotesize,
+    inner sep=3pt
+  },
+  groupbox/.style={
+    draw=linegray,
+    rounded corners=2.5mm,
+    inner sep=6pt,
+    fill=white
+  },
+  note/.style={
+    draw=linegray,
+    rounded corners=2mm,
+    fill=notegray,
+    align=left,
+    font=\footnotesize,
+    inner sep=5pt,
+    text width=9.2cm
+  }
+}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries\color{titleblue} Sơ đồ tổng quan mô hình \texttt{model\_2.py}}\\[0.6em]
+{\large Pipeline hybrid dạng tabular: fuzzy-rule features + regressor + direction stacker}
+\end{center}
+
+\begin{center}
+\resizebox{0.97\linewidth}{!}{
+\begin{tikzpicture}[node distance=8mm and 9mm]
+  \node[box, fill=inputblue, minimum width=33mm] (csv) at (0,0)
+    {CSV đầu vào\\\texttt{Date, Open, High, Low, Close}};
+  \node[box, fill=inputblue, minimum width=33mm] (prep) at (4.2,0)
+    {\texttt{prepare\_ohlc\_features}\\tạo feature OHLC\\và nhãn ngày kế tiếp};
+  \node[box, fill=inputblue, minimum width=29mm] (split) at (8.3,0)
+    {Chia theo thời gian\\train / validation / test};
+
+  \node[groupbox, fit={(9.7,-3.5) (18.7,3.7)}, label={[font=\bfseries\small]north west:Khối tạo đặc trưng}] {};
+  \node[smallbox, fill=fuzzygreen, minimum width=29mm] (base) at (12.2,2.2)
+    {Base numeric features\\OHLC, returns, momentum,\\volatility, candle geometry};
+  \node[smallbox, fill=fuzzygreen, minimum width=29mm] (retrules) at (12.2,0.0)
+    {Fuzzy rules returns\\\texttt{Close\_ret1, Open\_ret1,}\\\texttt{High\_ret1, Low\_ret1}};
+  \node[smallbox, fill=fuzzygreen, minimum width=29mm] (indrules) at (12.2,-2.2)
+    {Fuzzy rules indicators\\\texttt{range\_pct, gap,}\\\texttt{intraday, vol5}};
+  \node[box, fill=fuzzygreen, minimum width=30mm] (matrix) at (16.3,0.0)
+    {Ma trận đặc trưng cuối\\$X = [base \mid ret\_rules \mid ind\_rules]$};
+
+  \node[groupbox, fit={(19.1,-3.5) (30.7,3.7)}, label={[font=\bfseries\small]north west:Khối dự báo}] {};
+  \node[smallbox, fill=seqorange, minimum width=30mm] (reg) at (21.1,2.1)
+    {\texttt{ExtraTreesRegressor}\\học log-return\\của \texttt{Close}};
+  \node[smallbox, fill=seqorange, minimum width=30mm] (heads) at (21.1,-2.1)
+    {4 \texttt{HistGradientBoostingClassifier}\\dự báo hướng cho\\\texttt{Close / Open / High / Low}};
+  \node[box, fill=mixpurple, minimum width=31mm] (meta) at (25.5,0.8)
+    {Meta stacker\\4 xác suất hướng + \texttt{High-Low gap}\\+ tín hiệu hồi quy mềm};
+  \node[smallbox, fill=mixpurple, minimum width=27mm] (tune) at (25.5,-2.4)
+    {Tune trên validation\\\texttt{conf\_thr}, \texttt{dir\_thr}};
+  \node[box, fill=mixpurple, minimum width=29mm] (gate) at (29.3,0.8)
+    {Confidence gating\\đủ tự tin thì theo meta,\\không thì theo regressor};
+
+  \node[smallbox, fill=outred, minimum width=29mm] (close) at (33.3,2.0)
+    {Final Close\\giữ biên độ từ regressor\\và chỉ sửa dấu hướng};
+  \node[smallbox, fill=outred, minimum width=29mm] (metrics) at (37.2,2.0)
+    {\texttt{compute\_close\_metrics}\\MSE, RMSE, MAE,\\MAPE, R2, DA, F1};
+  \node[smallbox, fill=outred, minimum width=29mm] (json) at (37.2,-1.0)
+    {\texttt{build\_summary}\\ghi JSON kết quả\\và trial tốt nhất};
+
+  \draw[line] (csv) -- (prep);
+  \draw[line] (prep) -- (split);
+
+  \draw[line] (split) -- (base);
+  \draw[line] (split) -- (retrules);
+  \draw[line] (split) -- (indrules);
+  \draw[line] (base) -- (matrix);
+  \draw[line] (retrules) -- (matrix);
+  \draw[line] (indrules) -- (matrix);
+
+  \draw[line] (matrix) -- (reg);
+  \draw[line] (matrix) -- (heads);
+  \draw[line] (reg) -- (meta);
+  \draw[line] (heads) |- (meta);
+  \draw[line] (meta) -- (gate);
+  \draw[line] (reg.east) -| (gate.north);
+  \draw[line] (tune) -- (gate);
+  \draw[line] (gate) -- (close);
+  \draw[line] (close) -- (metrics);
+  \draw[line] (close) |- (json);
+
+  \node[note, text width=11.6cm] at (19.2,-5.5) {
+    \textbf{Ý tưởng chính:}\\
+    \texttt{model\_2.py} không dùng ANFIS deep end-to-end mà tạo \emph{ANFIS-style fuzzy rule features} từ hai nhóm đặc trưng nhỏ.\\
+    Sau đó một regressor học \emph{độ lớn} biến động của \texttt{Close}, còn bốn classifier học \emph{hướng} của OHLC.\\
+    Meta-model logistic chỉ sửa hướng khi đủ tự tin; biên độ cuối cùng vẫn lấy từ regressor.
+  };
+
+  \node[note, text width=10.0cm] at (34.8,-5.5) {
+    \textbf{Chống rò rỉ dữ liệu:}\\
+    Tâm và độ rộng fuzzy được fit chỉ trên \textbf{train}.\\
+    Ngưỡng \texttt{conf\_thr} và \texttt{dir\_thr} được chọn chỉ trên \textbf{validation}.\\
+    Test chỉ dùng đúng một lần để đánh giá cuối.
+  };
+\end{tikzpicture}
+}
+\end{center}
+
+\newpage
+
+\begin{center}
+{\LARGE\bfseries\color{titleblue} Sơ đồ chi tiết bước 1: từ dữ liệu đến ma trận đặc trưng}\\[0.6em]
+{\large Bám sát \texttt{prepare\_ohlc\_features}, \texttt{build\_time\_split}, \texttt{fit\_fuzzy\_group}, \texttt{build\_feature\_matrix}}
+\end{center}
+
+\begin{center}
+\resizebox{0.97\linewidth}{!}{
+\begin{tikzpicture}[node distance=7mm and 8mm]
+  \node[groupbox, fit={(-0.8,0.2) (21.8,7.0)}, label={[font=\bfseries\small]north west:Bước 1. Tiền xử lý và tạo nhãn}] {};
+  \node[box, fill=inputblue, minimum width=30mm] (raw) at (1.9,3.6)
+    {Bảng OHLC gốc\\CSV theo ngày};
+  \node[smallbox, fill=inputblue, minimum width=31mm] (validate) at (6.1,5.6)
+    {\texttt{validate\_input\_columns}\\kiểm tra \texttt{Date} và 4 cột OHLC};
+  \node[smallbox, fill=inputblue, minimum width=31mm] (sort) at (6.1,3.6)
+    {Parse \texttt{Date}, sort thời gian,\\lọc \texttt{min\_date}, ép kiểu số};
+  \node[smallbox, fill=inputblue, minimum width=31mm] (featblock) at (10.5,5.6)
+    {Returns cho mỗi OHLC\\\texttt{ret1}, \texttt{ret2}, \texttt{ret5}};
+  \node[smallbox, fill=inputblue, minimum width=31mm] (momvol) at (10.5,3.6)
+    {Momentum \texttt{mom3/5/10/20}\\Volatility \texttt{vol3/5/10/20}};
+  \node[smallbox, fill=inputblue, minimum width=31mm] (candle) at (10.5,1.6)
+    {Candle geometry\\\texttt{range\_pct}, \texttt{gap}, \texttt{intraday},\\\texttt{upper\_wick}, \texttt{lower\_wick}, \texttt{bb\_pos}};
+  \node[box, fill=inputblue, minimum width=32mm] (targets) at (15.6,3.6)
+    {Mục tiêu ngày kế tiếp\\\texttt{y\_Close/Open/High/Low}\\và nhãn \texttt{d\_*}};
+  \node[smallbox, fill=inputblue, minimum width=28mm] (clean) at (19.3,3.6)
+    {Loại \texttt{NaN}/\texttt{Inf}\\trả DataFrame sạch};
+
+  \node[groupbox, fit={(-0.8,-7.0) (21.8,-0.2)}, label={[font=\bfseries\small]north west:Bước 2. Xây ma trận đặc trưng cuối}] {};
+  \node[box, fill=fuzzygreen, minimum width=28mm] (split2) at (2.2,-3.6)
+    {\texttt{build\_time\_split}\\train / val / test\\theo đúng thứ tự thời gian};
+  \node[smallbox, fill=fuzzygreen, minimum width=29mm] (basecols) at (6.8,-1.7)
+    {\texttt{get\_base\_feature\_columns}\\loại \texttt{Date}, \texttt{y\_*}, \texttt{d\_*}};
+  \node[smallbox, fill=fuzzygreen, minimum width=29mm] (fitret) at (6.8,-3.6)
+    {\texttt{fit\_fuzzy\_group}\\returns group\\KMeans $\rightarrow$ centers,\\std $\rightarrow$ widths};
+  \node[smallbox, fill=fuzzygreen, minimum width=29mm] (fitind) at (6.8,-5.5)
+    {\texttt{fit\_fuzzy\_group}\\indicators group\\KMeans $\rightarrow$ centers,\\std $\rightarrow$ widths};
+  \node[smallbox, fill=fuzzygreen, minimum width=32mm] (rules) at (12.7,-3.6)
+    {\texttt{compute\_fuzzy\_rules}\\Gaussian membership\\$\rightarrow$ soft AND\\$\rightarrow$ chuẩn hóa theo hàng};
+  \node[box, fill=fuzzygreen, minimum width=31mm] (matrix2) at (18.2,-3.6)
+    {\texttt{build\_feature\_matrix}\\\texttt{[base | ret\_rules | ind\_rules]}\\cho train / val / test};
+
+  \node[note, text width=10.7cm] at (10.4,-8.8) {
+    \textbf{Nguyên tắc chống leakage:}\\
+    Hai fuzzy group được fit bằng \texttt{split.train} rồi mới áp dụng sang validation và test.\\
+    Nhờ vậy tâm Gaussian, độ rộng và số luật không nhìn thấy dữ liệu tương lai.
+  };
+
+  \node[note, text width=9.2cm] at (19.0,-8.8) {
+    \textbf{Kết quả của bước này:}\\
+    Ba ma trận \texttt{X\_train}, \texttt{X\_val}, \texttt{X\_test} với cùng cấu trúc cột, sẵn sàng cho nhánh regression và các head phân loại.
+  };
+
+  \draw[line] (raw) -- (validate);
+  \draw[line] (raw) -- (sort);
+  \draw[line] (validate) -- (featblock);
+  \draw[line] (sort) -- (featblock);
+  \draw[line] (sort) -- (momvol);
+  \draw[line] (sort) -- (candle);
+  \draw[line] (featblock) -- (targets);
+  \draw[line] (momvol) -- (targets);
+  \draw[line] (candle) -- (targets);
+  \draw[line] (targets) -- (clean);
+
+  \draw[line] (clean) |- (split2);
+  \draw[line] (split2) -- (basecols);
+  \draw[line] (split2) -- (fitret);
+  \draw[line] (split2) -- (fitind);
+  \draw[line] (fitret) -- (rules);
+  \draw[line] (fitind) -- (rules);
+  \draw[line] (basecols) |- (matrix2);
+  \draw[line] (rules) -- (matrix2);
+\end{tikzpicture}
+}
+\end{center}
+
+\newpage
+
+\begin{center}
+{\LARGE\bfseries\color{titleblue} Sơ đồ chi tiết bước 2: huấn luyện, stacking và đánh giá}\\[0.6em]
+{\large Bám sát \texttt{train\_close\_regressor}, \texttt{train\_direction\_heads}, \texttt{tune\_direction\_strategy}, \texttt{run\_search}}
+\end{center}
+
+\begin{center}
+\resizebox{0.97\linewidth}{!}{
+\begin{tikzpicture}[node distance=7mm and 8mm]
+  \node[groupbox, fit={(-0.8,0.8) (17.8,7.2)}, label={[font=\bfseries\small]north west:Bước 3. Huấn luyện các thành phần dự báo}] {};
+  \node[box, fill=seqorange, minimum width=29mm] (xall) at (2.2,4.0)
+    {\texttt{X\_train}, \texttt{X\_val}, \texttt{X\_test}\\từ bước trước};
+  \node[smallbox, fill=seqorange, minimum width=29mm] (closey) at (6.8,5.7)
+    {Lấy \texttt{y\_Close}\\và \texttt{curr\_Close}\\cho train / val / test};
+  \node[smallbox, fill=seqorange, minimum width=29mm] (reg2) at (11.2,5.7)
+    {\texttt{train\_close\_regressor}\\\texttt{ExtraTreesRegressor}\\học log-return của Close};
+  \node[smallbox, fill=seqorange, minimum width=28mm] (predret) at (15.3,5.7)
+    {\texttt{pred\_ret\_val}\\và \texttt{pred\_ret\_test}};
+  \node[smallbox, fill=seqorange, minimum width=29mm] (heads2) at (11.2,2.4)
+    {\texttt{train\_direction\_heads}\\4 head \texttt{HistGradientBoostingClassifier}\\trả xác suất hướng};
+  \node[smallbox, fill=seqorange, minimum width=28mm] (prob4) at (15.3,2.4)
+    {4 xác suất\\\texttt{Close / Open / High / Low}\\cho val và test};
+
+  \node[groupbox, fit={(19.0,0.8) (36.6,7.2)}, label={[font=\bfseries\small]north west:Bước 4. Stacking và confidence gating}] {};
+  \node[smallbox, fill=mixpurple, minimum width=30mm] (meta2) at (22.8,4.0)
+    {\texttt{build\_meta\_features}\\\texttt{[pC,pO,pH,pL,pH-pL,}\\\texttt{sigmoid(120 * pred\_ret)]}};
+  \node[smallbox, fill=mixpurple, minimum width=29mm] (fitmeta) at (27.2,4.0)
+    {\texttt{fit\_meta\_direction\_model}\\logistic stacker\\hoặc fallback Close head};
+  \node[smallbox, fill=mixpurple, minimum width=29mm] (tune2) at (31.5,5.8)
+    {\texttt{tune\_direction\_strategy}\\chọn \texttt{conf\_thr}\\và \texttt{dir\_thr} trên val};
+  \node[box, fill=mixpurple, minimum width=29mm] (apply2) at (31.5,2.3)
+    {\texttt{apply\_direction\_strategy}\\quyết định hướng cuối\\và dựng \texttt{final\_close}};
+
+  \node[groupbox, fit={(7.0,-6.5) (31.7,-0.2)}, label={[font=\bfseries\small]north west:Bước 5. Đánh giá, chọn trial tốt nhất, lưu kết quả}] {};
+  \node[smallbox, fill=outred, minimum width=29mm] (final2) at (10.7,-3.1)
+    {Dự báo cuối trên test\\\texttt{y\_pred\_close}\\và \texttt{y\_pred\_dir\_close}};
+  \node[smallbox, fill=outred, minimum width=29mm] (metric2) at (15.4,-1.6)
+    {\texttt{compute\_close\_metrics}\\MSE, RMSE, MAE,\\MAPE, R2, DA, F1};
+  \node[smallbox, fill=outred, minimum width=29mm] (naive) at (15.4,-4.4)
+    {\texttt{compute\_naive\_metrics}\\baseline persistence\\và trend persistence};
+  \node[smallbox, fill=outred, minimum width=29mm] (search) at (20.3,-1.6)
+    {\texttt{run\_search}\\lặp theo \texttt{min\_date},\\\texttt{train\_ratio}, \texttt{seed}};
+  \node[smallbox, fill=outred, minimum width=29mm] (best) at (20.3,-4.4)
+    {\texttt{is\_better\_trial}\\ưu tiên DA\\rồi đến R2};
+  \node[box, fill=outred, minimum width=30mm] (summary) at (25.8,-3.0)
+    {\texttt{build\_summary} + \texttt{main}\\ghi file JSON cuối cùng};
+
+  \node[note, text width=10.2cm] at (8.8,-9.0) {
+    \textbf{Vai trò hai nhánh tầng 1:}\\
+    Regresor học \emph{độ lớn} biến động của \texttt{Close} trong không gian log-return.\\
+    Bốn classifier học \emph{hướng} đi cho \texttt{Close/Open/High/Low}, để meta-model có nhiều tín hiệu mềm hơn.
+  };
+
+  \node[note, text width=8.4cm] at (21.0,-9.0) {
+    \textbf{Hàm chấm điểm validation:}\\
+    \[
+      score = DA - 250 \cdot \max(0,\;0.95 - R2) - 4 \cdot |Precision - Recall|
+    \]
+  };
+
+  \node[note, text width=8.8cm] at (31.6,-9.0) {
+    \textbf{Kết quả cuối:}\\
+    Lưu trial tốt nhất, baseline, metric của Close, ngưỡng chọn trên validation và toàn bộ dự báo test vào JSON tổng hợp.
+  };
+
+  \draw[line] (xall) -- (closey);
+  \draw[line] (xall) |- (heads2);
+  \draw[line] (closey) -- (reg2);
+  \draw[line] (reg2) -- (predret);
+  \draw[line] (heads2) -- (prob4);
+
+  \draw[line] (predret) -- (meta2);
+  \draw[line] (prob4) -- (meta2);
+  \draw[line] (meta2) -- (fitmeta);
+  \draw[line] (fitmeta) -- (tune2);
+  \draw[line] (fitmeta) -- (apply2);
+  \draw[line] (predret.east) -| (apply2.west);
+  \draw[line] (tune2) -- (apply2);
+
+  \draw[line] (apply2.south) |- (final2.north);
+  \draw[line] (final2) -- (metric2);
+  \draw[line] (final2) -- (naive);
+  \draw[line] (metric2) -- (search);
+  \draw[line] (naive) -- (best);
+  \draw[line] (search) -- (summary);
+  \draw[line] (best) -- (summary);
+\end{tikzpicture}
+}
+\end{center}
+
+\newpage
+
+\begin{center}
+{\LARGE\bfseries\color{titleblue} Sơ đồ chi tiết fuzzy-rule và stacking/gating}\\[0.6em]
+{\large Bám sát \texttt{fit\_fuzzy\_group}, \texttt{compute\_fuzzy\_rules}, \texttt{fit\_meta\_direction\_model}, \texttt{apply\_direction\_strategy}}
+\end{center}
+
+\begin{center}
+\resizebox{0.97\linewidth}{!}{
+\begin{tikzpicture}[node distance=8mm and 9mm]
+  \node[groupbox, fit={(-0.8,0.4) (19.7,7.6)}, label={[font=\bfseries\small]north west:Khối fuzzy-rule features}] {};
+  \node[box, fill=inputblue, minimum width=30mm] (trainlocal) at (2.2,4.7)
+    {Một nhóm đặc trưng\\trên train\\4 cột đầu vào};
+  \node[smallbox, fill=fuzzygreen, minimum width=29mm] (kmeans) at (6.5,6.1)
+    {\texttt{KMeans(n\_clusters=n\_mfs)}\\lấy các \texttt{centers}};
+  \node[smallbox, fill=fuzzygreen, minimum width=29mm] (quantile) at (6.5,4.2)
+    {Nếu lỗi thì fallback\\sang quantiles};
+  \node[smallbox, fill=fuzzygreen, minimum width=29mm] (widths) at (6.5,2.3)
+    {Độ rộng mỗi membership\\$width = 0.8 \cdot std$\\nếu quá nhỏ thì chặn dưới};
+  \node[box, fill=fuzzygreen, minimum width=30mm] (fgroup) at (11.0,4.2)
+    {\texttt{FuzzyGroup}\\\texttt{cols, centers, widths,}\\\texttt{rule\_indices}};
+  \node[smallbox, fill=fuzzygreen, minimum width=29mm] (memberships) at (15.2,5.6)
+    {\texttt{gauss\_mu}\\membership của từng feature\\với từng hàm thuộc};
+  \node[smallbox, fill=fuzzygreen, minimum width=29mm] (rules3) at (15.2,3.7)
+    {Duyệt mọi tổ hợp\\\texttt{product(range(n\_mfs), repeat=4)}\\$\Rightarrow n\_rules = n\_mfs^4$};
+  \node[smallbox, fill=fuzzygreen, minimum width=27mm] (softand) at (15.2,1.8)
+    {Nhân các membership\\trong cùng một luật\\soft AND};
+  \node[box, fill=fuzzygreen, minimum width=29mm] (normalize) at (18.2,3.7)
+    {Chuẩn hóa theo hàng\\tổng các luật $= 1$\\sinh \texttt{ret\_rule\_\#\#}\\hoặc \texttt{ind\_rule\_\#\#}};
+
+  \node[note, text width=9.8cm] at (9.8,-2.7) {
+    \textbf{Ý nghĩa:}\\
+    Hai nhóm fuzzy trong \texttt{model\_2.py} đều có 4 đầu vào:\\
+    - returns: \texttt{Close\_ret1, Open\_ret1, High\_ret1, Low\_ret1}\\
+    - indicators: \texttt{range\_pct, gap, intraday, vol5}\\
+    Với mặc định \texttt{n\_mfs = 2}, mỗi nhóm sinh ra $2^4 = 16$ luật mềm.
+  };
+
+  \node[groupbox, fit={(21.2,0.4) (40.8,7.6)}, label={[font=\bfseries\small]north west:Khối stacking và quyết định hướng cuối}] {};
+  \node[smallbox, fill=seqorange, minimum width=28mm] (predret) at (24.0,5.2)
+    {\texttt{pred\_ret}\\từ \texttt{ExtraTreesRegressor}};
+  \node[smallbox, fill=seqorange, minimum width=28mm] (prob4) at (24.0,2.6)
+    {4 xác suất hướng\\từ các head\\\texttt{Close/Open/High/Low}};
+  \node[smallbox, fill=mixpurple, minimum width=29mm] (metafeat3) at (28.5,4.0)
+    {Meta features\\\texttt{[pC,pO,pH,pL,}\\\texttt{pH-pL, sigmoid(120r)]}};
+  \node[smallbox, fill=mixpurple, minimum width=29mm] (logistic) at (32.8,4.0)
+    {\texttt{LogisticRegression}\\học \texttt{p\_meta}};
+  \node[smallbox, fill=mixpurple, minimum width=29mm] (fallback) at (32.8,6.1)
+    {Nếu validation chỉ có\\một class $\Rightarrow$\\dùng Close head};
+  \node[smallbox, fill=mixpurple, minimum width=28mm] (grid) at (37.0,6.1)
+    {Quét lưới trên val\\\texttt{conf\_thr} và \texttt{dir\_thr}};
+  \node[box, fill=mixpurple, minimum width=28mm] (gate3) at (37.0,3.8)
+    {Confidence gating\\\texttt{use\_meta}\\$= confidence \ge \tau_c$};
+  \node[smallbox, fill=outred, minimum width=28mm] (direction) at (37.0,1.7)
+    {Hướng cuối\\meta nếu tự tin,\\ngược lại lấy dấu của regressor};
+  \node[box, fill=outred, minimum width=28mm] (close3) at (40.3,1.7)
+    {\texttt{reconstruct\_close\_from\_direction}\\dùng độ lớn $|r|$ làm biên độ};
+
+  \node[note, text width=10.2cm] at (31.0,-2.7) {
+    \textbf{Công thức chính:}\\
+    $c = \texttt{current\_close}, \quad r = \texttt{pred\_ret}, \quad p = p_{meta}$\\
+    $\tau_c = \texttt{conf\_thr}, \quad \tau_d = \texttt{dir\_thr}$\\
+    $confidence = 2 \cdot |p - 0.5|$\\
+    $reg\_direction = \mathbb{1}[r \ge 0], \quad meta\_direction = \mathbb{1}[p \ge \tau_d]$\\
+    \[
+      \hat{C}_{t+1} =
+      \begin{cases}
+        c \cdot e^{|r|}, & \text{nếu hướng cuối là up} \\
+        c \cdot e^{-|r|}, & \text{nếu hướng cuối là down}
+      \end{cases}
+    \]
+  };
+
+  \draw[line] (trainlocal) -- (kmeans);
+  \draw[line] (trainlocal) |- (quantile);
+  \draw[line] (trainlocal) |- (widths);
+  \draw[line] (kmeans) -- (fgroup);
+  \draw[line] (quantile) -- (fgroup);
+  \draw[line] (widths) -- (fgroup);
+  \draw[line] (fgroup) -- (memberships);
+  \draw[line] (fgroup) -- (rules3);
+  \draw[line] (rules3) -- (softand);
+  \draw[line] (memberships) -- (softand);
+  \draw[line] (softand) -- (normalize);
+
+  \draw[line] (predret) -- (metafeat3);
+  \draw[line] (prob4) -- (metafeat3);
+  \draw[line] (metafeat3) -- (logistic);
+  \draw[line] (fallback) -- (grid);
+  \draw[line] (logistic) |- (grid);
+  \draw[line] (grid) -- (gate3);
+  \draw[line] (logistic) -- (gate3);
+  \draw[line] (predret.east) -| (gate3.west);
+  \draw[line] (gate3) -- (direction);
+  \draw[line] (direction) -- (close3);
+\end{tikzpicture}
+}
+\end{center}
+
+\end{document}

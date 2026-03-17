@@ -68,6 +68,9 @@ RULE_EPSILON = 1e-12
 MIN_TRAIN_ROWS = 300
 MIN_VALIDATION_ROWS = 30
 MIN_TEST_ROWS = 30
+MIN_META_TRAIN_ROWS = 15
+MIN_THRESHOLD_TUNE_ROWS = 15
+META_TRAIN_RATIO = 0.5
 
 # The final direction decision is tuned on validation by sweeping:
 # - a confidence threshold: "when should we trust the meta-model?"
@@ -332,6 +335,32 @@ def build_time_split(df: pd.DataFrame, cfg: TrialConfig) -> DatasetSplit:
     )
 
 
+def build_meta_validation_slices(n_rows: int) -> Tuple[slice, slice]:
+    """
+    Split the validation window into two chronological parts:
+    - early validation: fit the stacking meta-model
+    - late validation : tune confidence/direction thresholds
+
+    This keeps threshold tuning independent from meta-model fitting.
+    """
+
+    if n_rows < (MIN_META_TRAIN_ROWS + MIN_THRESHOLD_TUNE_ROWS):
+        raise ValueError(
+            "Validation split too small for stacking. Increase val_ratio or sample size."
+        )
+
+    meta_train_end = int(n_rows * META_TRAIN_RATIO)
+    meta_train_end = max(meta_train_end, MIN_META_TRAIN_ROWS)
+    meta_train_end = min(meta_train_end, n_rows - MIN_THRESHOLD_TUNE_ROWS)
+
+    if meta_train_end < MIN_META_TRAIN_ROWS or (n_rows - meta_train_end) < MIN_THRESHOLD_TUNE_ROWS:
+        raise ValueError(
+            "Validation split cannot support both meta-model fitting and threshold tuning."
+        )
+
+    return slice(0, meta_train_end), slice(meta_train_end, n_rows)
+
+
 def get_base_feature_columns(df: pd.DataFrame) -> List[str]:
     """Return usable input columns while excluding future targets."""
 
@@ -356,6 +385,12 @@ def build_feature_matrix(
     for prefix, fuzzy_group in fuzzy_groups.items():
         feature_blocks.append(compute_fuzzy_rules(part, fuzzy_group, prefix).to_numpy(dtype=np.float64))
     return np.hstack(feature_blocks)
+
+
+def slice_probability_dict(probabilities: Dict[str, np.ndarray], row_slice: slice) -> Dict[str, np.ndarray]:
+    """Slice every probability vector with the same chronological window."""
+
+    return {target: values[row_slice] for target, values in probabilities.items()}
 
 
 def compute_close_metrics(
@@ -404,7 +439,7 @@ def compute_close_metrics(
     }
 
 
-def compute_naive_metrics(test: pd.DataFrame) -> Dict[str, Dict[str, float]]:
+def compute_naive_metrics(history: pd.DataFrame, test: pd.DataFrame) -> Dict[str, Dict[str, float]]:
     """
     Simple baselines used for context.
 
@@ -420,10 +455,10 @@ def compute_naive_metrics(test: pd.DataFrame) -> Dict[str, Dict[str, float]]:
     dir_rw = np.zeros_like(curr, dtype=int)
     persistence_metrics = compute_close_metrics(y_true, pred_rw, curr, dir_rw)
 
-    # Baseline 2: keep today's direction and use a typical historical move size.
-    prev = test["Close"].shift(1).fillna(test["Close"]).to_numpy(dtype=float)
-    dir_tr = (curr >= prev).astype(int)
-    med_move = float(np.nanmedian(np.abs(test["Close_ret1"].to_numpy(dtype=float))))
+    # Baseline 2: keep the most recent observed direction and use a move size
+    # estimated only from data available before the test window starts.
+    dir_tr = (test["Close_ret1"].to_numpy(dtype=float) >= 0.0).astype(int)
+    med_move = float(np.nanmedian(np.abs(history["Close_ret1"].to_numpy(dtype=float))))
     if not np.isfinite(med_move) or med_move < 1e-6:
         med_move = 0.005
     pred_tr = curr * np.exp(np.where(dir_tr == 1, med_move, -med_move))
@@ -438,11 +473,11 @@ def compute_naive_metrics(test: pd.DataFrame) -> Dict[str, Dict[str, float]]:
 def train_close_regressor(
     X_train: np.ndarray,
     X_val: np.ndarray,
-    X_test: np.ndarray,
+    X_test: Optional[np.ndarray],
     y_close_train: np.ndarray,
     curr_train: np.ndarray,
     curr_val: np.ndarray,
-    curr_test: np.ndarray,
+    curr_test: Optional[np.ndarray],
     seed: int,
 ) -> Dict[str, object]:
     """
@@ -465,25 +500,28 @@ def train_close_regressor(
     regressor.fit(X_train, y_ret_train)
 
     pred_ret_val = regressor.predict(X_val)
-    pred_ret_test = regressor.predict(X_test)
+    pred_ret_test = regressor.predict(X_test) if X_test is not None else None
+    close_test_reg = None
+    if pred_ret_test is not None and curr_test is not None:
+        close_test_reg = curr_test * np.exp(pred_ret_test)
     return {
         # The raw regressor output is still in return space.
         "model": regressor,
         "pred_ret_val": pred_ret_val,
         "pred_ret_test": pred_ret_test,
         "close_val_reg": curr_val * np.exp(pred_ret_val),
-        "close_test_reg": curr_test * np.exp(pred_ret_test),
+        "close_test_reg": close_test_reg,
     }
 
 
 def train_direction_heads(
     X_train: np.ndarray,
     X_val: np.ndarray,
-    X_test: np.ndarray,
+    X_test: Optional[np.ndarray],
     train: pd.DataFrame,
     val: pd.DataFrame,
     seed: int,
-) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray], Dict[str, float]]:
+) -> Tuple[Dict[str, np.ndarray], Optional[Dict[str, np.ndarray]], Dict[str, float]]:
     """
     Train one direction classifier per OHLC target.
 
@@ -496,7 +534,7 @@ def train_direction_heads(
     """
 
     prob_val: Dict[str, np.ndarray] = {}
-    prob_test: Dict[str, np.ndarray] = {}
+    prob_test: Optional[Dict[str, np.ndarray]] = {} if X_test is not None else None
     head_val_da: Dict[str, float] = {}
 
     for target in TARGETS:
@@ -515,9 +553,9 @@ def train_direction_heads(
         # We keep probabilities rather than only hard labels because the
         # meta-model and the confidence gating both need calibrated confidence.
         val_probability = classifier.predict_proba(X_val)[:, 1]
-        test_probability = classifier.predict_proba(X_test)[:, 1]
         prob_val[target] = val_probability
-        prob_test[target] = test_probability
+        if X_test is not None and prob_test is not None:
+            prob_test[target] = classifier.predict_proba(X_test)[:, 1]
         head_val_da[target] = accuracy_score(y_dir_val, (val_probability >= 0.5).astype(int)) * 100.0
 
     return prob_val, prob_test, head_val_da
@@ -548,31 +586,34 @@ def build_meta_features(probabilities: Dict[str, np.ndarray], pred_returns: np.n
 
 
 def fit_meta_direction_model(
-    meta_val: np.ndarray,
-    meta_test: np.ndarray,
-    fallback_val: np.ndarray,
-    fallback_test: np.ndarray,
-    y_dir_close_val: np.ndarray,
+    meta_train: np.ndarray,
+    meta_tune: np.ndarray,
+    meta_test: Optional[np.ndarray],
+    fallback_tune: np.ndarray,
+    fallback_test: Optional[np.ndarray],
+    y_dir_close_meta_train: np.ndarray,
     seed: int,
-) -> Tuple[np.ndarray, np.ndarray, str]:
+) -> Tuple[np.ndarray, Optional[np.ndarray], str]:
     """
-    Train the meta direction model, or fall back if validation is single-class.
+    Train the meta direction model on early validation, then score later slices.
 
-    A classifier cannot learn a meaningful boundary if validation labels contain
-    only one class. In that case we avoid forcing a broken stacker and simply
-    reuse the Close head.
+    A classifier cannot learn a meaningful boundary if the meta-training window
+    is too small or contains only one class. In that case we avoid forcing a
+    broken stacker and simply reuse the Close head.
     """
 
-    if len(np.unique(y_dir_close_val)) < 2:
-        return fallback_val, fallback_test, "fallback_close_head"
+    if len(meta_train) < MIN_META_TRAIN_ROWS or len(np.unique(y_dir_close_meta_train)) < 2:
+        return fallback_tune, fallback_test, "fallback_close_head"
 
-    meta_model = LogisticRegression(max_iter=400, random_state=seed)
-    meta_model.fit(meta_val, y_dir_close_val)
-    return (
-        meta_model.predict_proba(meta_val)[:, 1],
-        meta_model.predict_proba(meta_test)[:, 1],
-        "logistic_stacker",
-    )
+    try:
+        meta_model = LogisticRegression(max_iter=400, random_state=seed)
+        meta_model.fit(meta_train, y_dir_close_meta_train)
+    except Exception:
+        return fallback_tune, fallback_test, "fallback_close_head"
+
+    tune_probabilities = meta_model.predict_proba(meta_tune)[:, 1]
+    test_probabilities = meta_model.predict_proba(meta_test)[:, 1] if meta_test is not None else None
+    return tune_probabilities, test_probabilities, "logistic_stacker"
 
 
 def reconstruct_close_from_direction(
@@ -679,7 +720,7 @@ def apply_direction_strategy(
     return final_direction, final_close
 
 
-def run_trial(df: pd.DataFrame, cfg: TrialConfig) -> Dict[str, object]:
+def run_trial(df: pd.DataFrame, cfg: TrialConfig, evaluate_test: bool = True) -> Dict[str, object]:
     """
     Run one complete training/evaluation trial.
 
@@ -695,6 +736,7 @@ def run_trial(df: pd.DataFrame, cfg: TrialConfig) -> Dict[str, object]:
 
     # 1. Split data by time.
     split = build_time_split(df, cfg)
+    meta_train_slice, threshold_tune_slice = build_meta_validation_slices(len(split.val))
 
     # 2. Build feature columns and fit fuzzy groups only on training data.
     base_cols = get_base_feature_columns(df)
@@ -706,15 +748,14 @@ def run_trial(df: pd.DataFrame, cfg: TrialConfig) -> Dict[str, object]:
     # 3. Convert each split into the final design matrix X.
     X_train = build_feature_matrix(split.train, base_cols, fuzzy_groups)
     X_val = build_feature_matrix(split.val, base_cols, fuzzy_groups)
-    X_test = build_feature_matrix(split.test, base_cols, fuzzy_groups)
+    X_test = build_feature_matrix(split.test, base_cols, fuzzy_groups) if evaluate_test else None
 
     # 4. Extract next-day Close targets and current Close references.
     y_close_train = split.train["y_Close"].to_numpy()
     y_close_val = split.val["y_Close"].to_numpy()
-    y_close_test = split.test["y_Close"].to_numpy()
     curr_train = split.train["Close"].to_numpy()
     curr_val = split.val["Close"].to_numpy()
-    curr_test = split.test["Close"].to_numpy()
+    curr_test = split.test["Close"].to_numpy() if evaluate_test else None
 
     # 5. Train the magnitude model for Close.
     close_regression = train_close_regressor(
@@ -738,48 +779,54 @@ def run_trial(df: pd.DataFrame, cfg: TrialConfig) -> Dict[str, object]:
         seed=cfg.seed,
     )
 
-    # 7. Stack first-level model outputs into meta features.
-    meta_val = build_meta_features(prob_val, close_regression["pred_ret_val"])
-    meta_test = build_meta_features(prob_test, close_regression["pred_ret_test"])
-    y_dir_close_val = split.val["d_Close"].to_numpy()
-    y_dir_close_test = split.test["d_Close"].to_numpy()
+    # 7. Split validation chronologically:
+    # - early half trains the stacker
+    # - later half tunes the gating thresholds
+    prob_val_meta_train = slice_probability_dict(prob_val, meta_train_slice)
+    prob_val_tune = slice_probability_dict(prob_val, threshold_tune_slice)
+    pred_ret_val = close_regression["pred_ret_val"]
+    meta_train = build_meta_features(prob_val_meta_train, pred_ret_val[meta_train_slice])
+    meta_tune = build_meta_features(prob_val_tune, pred_ret_val[threshold_tune_slice])
+    meta_test = None
+    if evaluate_test:
+        if prob_test is None or close_regression["pred_ret_test"] is None:
+            raise RuntimeError("Test predictions are unavailable for final evaluation.")
+        meta_test = build_meta_features(prob_test, close_regression["pred_ret_test"])
 
-    # 8. Fit the meta direction model.
-    p_meta_val, p_meta_test, meta_model_used = fit_meta_direction_model(
-        meta_val=meta_val,
+    y_dir_close_val = split.val["d_Close"].to_numpy()
+    y_dir_close_meta_train = y_dir_close_val[meta_train_slice]
+    y_close_tune = y_close_val[threshold_tune_slice]
+    curr_tune = curr_val[threshold_tune_slice]
+    pred_ret_tune = pred_ret_val[threshold_tune_slice]
+
+    # 8. Fit the meta direction model on early validation only.
+    p_meta_tune, p_meta_test, meta_model_used = fit_meta_direction_model(
+        meta_train=meta_train,
+        meta_tune=meta_tune,
         meta_test=meta_test,
-        fallback_val=prob_val["Close"],
-        fallback_test=prob_test["Close"],
-        y_dir_close_val=y_dir_close_val,
+        fallback_tune=prob_val["Close"][threshold_tune_slice],
+        fallback_test=None if prob_test is None else prob_test["Close"],
+        y_dir_close_meta_train=y_dir_close_meta_train,
         seed=cfg.seed,
     )
 
-    # 9. Tune gating thresholds on validation only.
+    # 9. Tune gating thresholds on a later validation slice that the meta-model
+    # never saw during fitting.
     best_val = tune_direction_strategy(
-        y_close_val=y_close_val,
-        curr_val=curr_val,
-        pred_ret_val=close_regression["pred_ret_val"],
-        p_meta_val=p_meta_val,
+        y_close_val=y_close_tune,
+        curr_val=curr_tune,
+        pred_ret_val=pred_ret_tune,
+        p_meta_val=p_meta_tune,
     )
 
-    # 10. Freeze those thresholds and evaluate once on test.
-    dir_close_test, close_test_pred = apply_direction_strategy(
-        curr_close=curr_test,
-        pred_returns=close_regression["pred_ret_test"],
-        meta_probabilities=p_meta_test,
-        conf_threshold=float(best_val["conf_thr"]),
-        dir_threshold=float(best_val["dir_thr"]),
-    )
-
-    close_metrics = compute_close_metrics(y_close_test, close_test_pred, curr_test, dir_close_test)
-    naive_metrics = compute_naive_metrics(split.test)
-
-    return {
+    result: Dict[str, object] = {
         "config": asdict(cfg),
         "split": {
             "n_total": int(len(df)),
             "n_train": int(len(split.train)),
             "n_val": int(len(split.val)),
+            "n_val_meta_train": int(meta_train_slice.stop - meta_train_slice.start),
+            "n_val_tune": int(threshold_tune_slice.stop - threshold_tune_slice.start),
             "n_test": int(len(split.test)),
         },
         "model": {
@@ -798,29 +845,57 @@ def run_trial(df: pd.DataFrame, cfg: TrialConfig) -> Dict[str, object]:
             },
         },
         "threshold_selection": best_val,
-        "naive_baselines": naive_metrics,
+        "selection_metrics": {
+            "Close": best_val["val_metrics"],
+        },
+        "test_metrics": None,
+        "naive_baselines": None,
         "val_head_da": head_val_da,
-        "metrics": {
-            "Close": close_metrics,
-        },
-        "predictions": {
-            "y_true_close": y_close_test.astype(float).tolist(),
-            "y_pred_close": close_test_pred.astype(float).tolist(),
-            "y_true_dir_close": y_dir_close_test.astype(int).tolist(),
-            "y_pred_dir_close": dir_close_test.astype(int).tolist(),
-            "curr_close": curr_test.astype(float).tolist(),
-        },
+        "predictions": None,
     }
+
+    if not evaluate_test:
+        return result
+
+    if curr_test is None or close_regression["pred_ret_test"] is None or p_meta_test is None:
+        raise RuntimeError("Final test evaluation requested without test predictions.")
+
+    y_close_test = split.test["y_Close"].to_numpy()
+    y_dir_close_test = split.test["d_Close"].to_numpy()
+
+    # 10. Freeze those thresholds and evaluate once on test.
+    dir_close_test, close_test_pred = apply_direction_strategy(
+        curr_close=curr_test,
+        pred_returns=close_regression["pred_ret_test"],
+        meta_probabilities=p_meta_test,
+        conf_threshold=float(best_val["conf_thr"]),
+        dir_threshold=float(best_val["dir_thr"]),
+    )
+
+    close_metrics = compute_close_metrics(y_close_test, close_test_pred, curr_test, dir_close_test)
+    naive_metrics = compute_naive_metrics(pd.concat([split.train, split.val], axis=0), split.test)
+    result["test_metrics"] = {
+        "Close": close_metrics,
+    }
+    result["naive_baselines"] = naive_metrics
+    result["predictions"] = {
+        "y_true_close": y_close_test.astype(float).tolist(),
+        "y_pred_close": close_test_pred.astype(float).tolist(),
+        "y_true_dir_close": y_dir_close_test.astype(int).tolist(),
+        "y_pred_dir_close": dir_close_test.astype(int).tolist(),
+        "curr_close": curr_test.astype(float).tolist(),
+    }
+    return result
 
 
 def is_better_trial(candidate: Dict[str, object], current_best: Optional[Dict[str, object]]) -> bool:
-    """Rank trials primarily by direction accuracy, then by R2."""
+    """Rank trials primarily by validation direction accuracy, then by validation R2."""
 
     if current_best is None:
         return True
 
-    candidate_close = candidate["metrics"]["Close"]
-    best_close = current_best["metrics"]["Close"]
+    candidate_close = candidate["selection_metrics"]["Close"]
+    best_close = current_best["selection_metrics"]["Close"]
     return (
         candidate_close["DA"] > best_close["DA"] + 1e-9
         or (
@@ -839,7 +914,7 @@ def run_search(
     n_mfs: int,
     target_da: float,
     target_r2: float,
-) -> Tuple[List[Dict[str, object]], Dict[str, object], bool, float]:
+) -> Tuple[List[Dict[str, object]], Dict[str, object], Dict[str, object], bool, float]:
     """
     Grid-search several configurations and stop early if the target is reached.
 
@@ -873,15 +948,15 @@ def run_search(
                 )
 
                 try:
-                    result = run_trial(df_feat, cfg)
+                    result = run_trial(df_feat, cfg, evaluate_test=False)
                 except Exception as exc:
                     print(f"Trial failed: {exc}")
                     continue
 
-                close_metrics = result["metrics"]["Close"]
+                close_metrics = result["selection_metrics"]["Close"]
                 print(
-                    f"Close: DA={close_metrics['DA']:.2f}% | R2={close_metrics['R2']:.4f} | "
-                    f"MAPE={close_metrics['MAPE']:.3f}% | n_test={result['split']['n_test']}"
+                    f"Validation tune Close: DA={close_metrics['DA']:.2f}% | R2={close_metrics['R2']:.4f} | "
+                    f"MAPE={close_metrics['MAPE']:.3f}% | n_val_tune={result['split']['n_val_tune']}"
                 )
 
                 trial_results.append(result)
@@ -890,7 +965,7 @@ def run_search(
 
                 if close_metrics["DA"] >= target_da and close_metrics["R2"] >= target_r2:
                     reached_target = True
-                    print("Target reached. Stopping search early.")
+                    print("Validation target reached. Stopping search early.")
                     break
             if reached_target:
                 break
@@ -900,8 +975,12 @@ def run_search(
     if not trial_results or best_trial is None:
         raise RuntimeError("No successful trial. Check dataset and split settings.")
 
+    best_cfg = TrialConfig(**best_trial["config"])
+    best_df_feat = prepare_ohlc_features(data, min_date=best_cfg.min_date)
+    final_best_trial = run_trial(best_df_feat, best_cfg, evaluate_test=True)
+
     elapsed = time.time() - start_time
-    return trial_results, best_trial, reached_target, elapsed
+    return trial_results, best_trial, final_best_trial, reached_target, elapsed
 
 
 def build_summary(
@@ -915,13 +994,15 @@ def build_summary(
     target_da: float,
     target_r2: float,
     reached: bool,
-    best_trial: Dict[str, object],
+    best_selection_trial: Dict[str, object],
+    best_test_trial: Dict[str, object],
     trial_results: Sequence[Dict[str, object]],
     elapsed: float,
 ) -> Dict[str, object]:
     """Build the final JSON payload written to disk."""
 
-    best_close = best_trial["metrics"]["Close"]
+    best_validation_close = best_selection_trial["selection_metrics"]["Close"]
+    best_test_close = best_test_trial["test_metrics"]["Close"]
     return {
         "stock": stock,
         "data_path": os.path.abspath(data_path),
@@ -933,17 +1014,20 @@ def build_summary(
             "n_mfs": n_mfs,
         },
         "target": {"DA": target_da, "R2": target_r2},
-        "target_reached": reached,
-        "best_trial": best_trial,
-        "best_close_metrics": best_close,
+        "target_reached_on_validation": reached,
+        "best_selection_trial": best_selection_trial,
+        "best_test_trial": best_test_trial,
+        "best_validation_metrics": best_validation_close,
+        "best_test_metrics": best_test_close,
         "n_trials_successful": len(trial_results),
         "search_time_sec": elapsed,
         "all_trial_scores": [
             {
                 "config": trial["config"],
-                "Close_DA": trial["metrics"]["Close"]["DA"],
-                "Close_R2": trial["metrics"]["Close"]["R2"],
-                "Close_MAPE": trial["metrics"]["Close"]["MAPE"],
+                "Close_DA_validation": trial["selection_metrics"]["Close"]["DA"],
+                "Close_R2_validation": trial["selection_metrics"]["Close"]["R2"],
+                "Close_MAPE_validation": trial["selection_metrics"]["Close"]["MAPE"],
+                "n_val_tune": trial["split"]["n_val_tune"],
                 "n_test": trial["split"]["n_test"],
             }
             for trial in trial_results
@@ -988,7 +1072,7 @@ def main() -> None:
     print(f"Target: Close DA > {args.target_da:.2f}, Close R2 > {args.target_r2:.4f}")
     print(f"Grid: min_date={min_dates}, train_ratio={train_ratios}, seeds={seeds}")
 
-    trial_results, best_trial, reached, elapsed = run_search(
+    trial_results, best_selection_trial, best_test_trial, reached, elapsed = run_search(
         data=data,
         min_dates=min_dates,
         train_ratios=train_ratios,
@@ -1010,7 +1094,8 @@ def main() -> None:
         target_da=args.target_da,
         target_r2=args.target_r2,
         reached=reached,
-        best_trial=best_trial,
+        best_selection_trial=best_selection_trial,
+        best_test_trial=best_test_trial,
         trial_results=trial_results,
         elapsed=elapsed,
     )
@@ -1019,13 +1104,19 @@ def main() -> None:
     with open(out_json, "w", encoding="utf-8") as output_file:
         json.dump(summary, output_file, indent=2)
 
-    best_close = summary["best_close_metrics"]
+    best_val_close = summary["best_validation_metrics"]
+    best_test_close = summary["best_test_metrics"]
     print("\n" + "=" * 72)
     print("BEST RESULT")
     print("=" * 72)
     print(
-        f"Close: DA={best_close['DA']:.2f}% | R2={best_close['R2']:.4f} | "
-        f"MAPE={best_close['MAPE']:.3f}% | target_reached={reached}"
+        f"Validation-selected Close: DA={best_val_close['DA']:.2f}% | "
+        f"R2={best_val_close['R2']:.4f} | MAPE={best_val_close['MAPE']:.3f}%"
+    )
+    print(
+        f"Final test Close: DA={best_test_close['DA']:.2f}% | "
+        f"R2={best_test_close['R2']:.4f} | MAPE={best_test_close['MAPE']:.3f}% | "
+        f"validation_target_reached={reached}"
     )
     print(f"Saved: {out_json}")
 
